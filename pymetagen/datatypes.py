@@ -5,6 +5,26 @@ import polars as pl
 from enum import Enum
 
 
+class MetaGenSupportedLoadingModes(str, Enum):
+    lazy = 'lazy'
+    full = 'full'
+
+    @classmethod
+    def list(cls) -> list[str]:
+        return list(map(lambda c: c.value, cls))
+
+
+class MetaGenSupportedFileExtensions(str, Enum):
+    csv = 'csv'
+    json = 'json'
+    parquet = 'parquet'
+    xlsx = 'xlsx'
+
+    @classmethod
+    def list(cls) -> list[str]:
+        return list(map(lambda c: c.value, cls))
+
+
 class MetaGenDataType(str, Enum):
     string = 'string'
     float = 'float'

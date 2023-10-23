@@ -1,4 +1,4 @@
-from pymetagen.pymetagen.utils._version import _get_version
+from pymetagen.pymetagen._version import _get_version
 
 __version__ = _get_version()
 
