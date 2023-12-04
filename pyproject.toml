@@ -82,3 +82,7 @@ exclude_lines = [
 [tool.coverage.run]
 branch = true
 include = ["./uncannyglen/*"]
+
+[tool.pytest.ini_options]
+addopts = '--strict-markers --junitxml=test-reports/pytest.xml'
+junit_family = 'xunit1'
