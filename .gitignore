@@ -1,3 +1,7 @@
+test-reports/*
+tests/data/input.parquet
+tests/data/input.xlsx
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

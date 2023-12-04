@@ -1,4 +1,5 @@
-from pymetagen.pymetagen._version import _get_version
+from pymetagen._version import _get_version
+from pymetagen.pymetagen import *  # noqa: F403
 
 __version__ = _get_version()
 

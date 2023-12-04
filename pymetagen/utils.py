@@ -2,22 +2,7 @@ from __future__ import annotations
 
 import datetime
 import sys
-
-from pprint import pformat
 from typing import Any
-
-
-class Dummy:
-    def __init__(self, *args, **kwargs):
-        pass
-
-    def __str__(self):
-        return f"Dummy(**{pformat(self.__dict__, indent=4)})"
-
-    def flatten_object(self):
-        return flatten(self.__dict__)
-
-    __repr__ = __str__
 
 
 def nvl(v, default):
@@ -53,12 +38,6 @@ def flatten(
             for k, v in o.items()
             if k in ref and (v is not None or not exclude_none)
         }
-    elif isinstance(o, Dummy):
-        return {
-            k: flatten(v, ref[k], key=k)
-            for k, v in o.__dict__.items()
-            if k in ref and (v is not None or not exclude_none)
-        }
     elif isinstance(o, list | tuple):
         return [
             flatten(v, w, key=str(i)) for i, (v, w) in enumerate(zip(o, ref))
@@ -80,9 +59,7 @@ def flatten(
             )
         else:
             print(
-                (
-                    f"Cannot flatten object type {type(o)} for"
-                    f" {key}\n\nSkipping!!"
-                ),
+                f"Cannot flatten object type {type(o)} for"
+                f" {key}\n\nSkipping!!",
                 file=sys.stderr,
             )
