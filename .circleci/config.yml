@@ -11,7 +11,7 @@ commands:
           key: poetry-cache-{{ checksum "poetry.lock" }}
       - run:
           name: Install dependencies
-          command: poetry install --without docs --without jupyter --sync
+          command: poetry install --sync
       - save_cache:
           key: poetry-cache-{{ checksum "poetry.lock" }}
           paths:
