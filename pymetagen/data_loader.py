@@ -202,7 +202,7 @@ class DataLoader:
     ) -> pl.LazyFrame | pl.DataFrame:
         if mode not in MetaGenSupportedLoadingModes.list():
             raise KeyError(
-                f'Unknow load mode: {mode}. Change to one of supported loading'
+                f'Unknownn load mode: {mode}. Change to one of supported loading'
                 f' modes: {MetaGenSupportedLoadingModes.list()}'
             )
         if mode == MetaGenSupportedLoadingModes.lazy:
@@ -219,7 +219,7 @@ class DataLoader:
     ) -> pl.LazyFrame | pl.DataFrame:
         if mode not in MetaGenSupportedLoadingModes.list():
             raise KeyError(
-                f'Unknow load mode: {mode}. Change to'
+                f'Unknown load mode: {mode}. Change to'
                 f' {MetaGenSupportedLoadingModes.full} for Excel files'
                 ' loading.'
             )
@@ -238,7 +238,7 @@ class DataLoader:
     ) -> pl.LazyFrame | pl.DataFrame:
         if mode not in MetaGenSupportedLoadingModes.list():
             raise KeyError(
-                f'Unknow read mode: {mode}. Change to'
+                f'Unknown read mode: {mode}. Change to'
                 f' {MetaGenSupportedLoadingModes.full} for Excel files'
                 ' loading.'
             )
