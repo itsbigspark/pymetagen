@@ -81,7 +81,7 @@ exclude_lines = [
 
 [tool.coverage.run]
 branch = true
-include = ["./uncannyglen/*"]
+include = ["./pymetagen/*"]
 
 [tool.pytest.ini_options]
 addopts = '--strict-markers --junitxml=test-reports/pytest.xml'
