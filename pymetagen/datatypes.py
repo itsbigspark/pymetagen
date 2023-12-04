@@ -4,25 +4,19 @@ from enum import Enum
 
 import polars as pl
 
+from pymetagen.utils import EnumListMixin
 
-class MetaGenSupportedLoadingModes(str, Enum):
+
+class MetaGenSupportedLoadingModes(EnumListMixin, str, Enum):
     LAZY = "lazy"
     FULL = "full"
 
-    @classmethod
-    def list(cls) -> list[str]:
-        return list(map(lambda c: c.value, cls))
 
-
-class MetaGenSupportedFileExtensions(str, Enum):
+class MetaGenSupportedFileExtensions(EnumListMixin, str, Enum):
     CSV = ".csv"
     JSON = ".json"
     PARQUET = ".parquet"
     XLSX = ".xlsx"
-
-    @classmethod
-    def list(cls) -> list[str]:
-        return list(map(lambda c: c.value, cls))
 
 
 class MetaGenDataType(str, Enum):

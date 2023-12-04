@@ -55,6 +55,7 @@ import polars as pl
 
 from pymetagen.dataloader import DataLoader, LazyDataLoader
 from pymetagen.datatypes import MetaGenSupportedLoadingModes
+from pymetagen.exceptions import LoadingModeUnsupportedError
 from pymetagen.typing import DataFrameT
 
 
@@ -97,8 +98,14 @@ class MetaGen:
             MetaGenSupportedLoadingModes.LAZY: LazyDataLoader,
             MetaGenSupportedLoadingModes.FULL: DataLoader,
         }
-        loader = mode_mapping[mode](path)
-        data = loader()
+        try:
+            LoaderClass = mode_mapping[mode]
+        except KeyError:
+            raise LoadingModeUnsupportedError(
+                f"Mode {mode} is not supported. Supported modes are: "
+                f"{MetaGenSupportedLoadingModes.list()}"
+            )
+        data = LoaderClass(path)()
 
         return cls(
             data=data,

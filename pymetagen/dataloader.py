@@ -41,6 +41,7 @@ from polars.datatypes.constants import N_INFER_DEFAULT
 from polars.type_aliases import ParallelStrategy
 
 from pymetagen.datatypes import MetaGenSupportedFileExtensions
+from pymetagen.exceptions import FileTypeUnsupportedError
 from pymetagen.utils import selectively_update_dict
 
 
@@ -181,7 +182,7 @@ class DataLoader:
         try:
             return extension_mapping[file_extension]()
         except KeyError:
-            raise NotImplementedError(
+            raise FileTypeUnsupportedError(
                 f"File extension {file_extension} is not supported"
             )
 
