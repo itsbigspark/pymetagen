@@ -32,7 +32,7 @@ commands:
     steps:
       - restore_cache:
           key: pre-commit-cache-{{ checksum ".pre-commit-config.yaml" }}
-      - run: pre-commit run --all-files
+      - run: poetry run pre-commit run --all-files
       - save_cache:
           key: pre-commit-cache-{{ checksum ".pre-commit-config.yaml" }}
           paths:
