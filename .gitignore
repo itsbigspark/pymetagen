@@ -1,6 +1,7 @@
 test-reports/*
 tests/data/input.parquet
 tests/data/input.xlsx
+.vscode/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
