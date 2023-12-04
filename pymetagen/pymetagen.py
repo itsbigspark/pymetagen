@@ -53,7 +53,7 @@ from pathlib import Path
 
 import polars as pl
 
-from pymetagen.dataloader import DataLoader
+from pymetagen.dataloader import DataLoader, LazyDataLoader
 from pymetagen.datatypes import MetaGenSupportedLoadingModes
 from pymetagen.typing import DataFrameT
 
@@ -93,8 +93,15 @@ class MetaGen:
         descriptions: pl.LazyFrame | None = None,
         mode: MetaGenSupportedLoadingModes = MetaGenSupportedLoadingModes.LAZY,
     ) -> DataFrameT:
+        mode_mapping = {
+            MetaGenSupportedLoadingModes.LAZY: LazyDataLoader,
+            MetaGenSupportedLoadingModes.FULL: DataLoader,
+        }
+        loader = mode_mapping[mode](path)
+        data = loader()
+
         return cls(
-            data=DataLoader(path, mode).data,
+            data=data,
             outpath=outpath,
             create_regex=create_regex,
             descriptions=descriptions,

@@ -15,10 +15,10 @@ class MetaGenSupportedLoadingModes(str, Enum):
 
 
 class MetaGenSupportedFileExtensions(str, Enum):
-    CSV = "csv"
-    JSON = "json"
-    PARQUET = "parquet"
-    XLSX = "xlsx"
+    CSV = ".csv"
+    JSON = ".json"
+    PARQUET = ".parquet"
+    XLSX = ".xlsx"
 
     @classmethod
     def list(cls) -> list[str]:

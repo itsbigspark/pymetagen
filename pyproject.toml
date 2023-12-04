@@ -9,12 +9,14 @@ readme = "README.md"
 python = "^3.11"
 pyarrow = "^14.0.1"
 regex = "^2023.6.3"
-polars = "^0.18.15"
+polars = "^0.19.19"
+openpyxl = "^3.1.2"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.3.3"
 pytest = "^7.4.0"
 coverage = "^7.3.0"
+xlsxwriter = "^3.1.9"
 
 [build-system]
 requires = ["poetry-core"]

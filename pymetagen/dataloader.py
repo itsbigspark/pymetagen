@@ -32,7 +32,7 @@ polars_default_read_csv_options
     raise_if_empty: bool = True,
 }
 """
-from collections.abc import Callable
+import warnings
 from pathlib import Path
 from typing import Any
 
@@ -40,10 +40,7 @@ import polars as pl
 from polars.datatypes.constants import N_INFER_DEFAULT
 from polars.type_aliases import ParallelStrategy
 
-from pymetagen.datatypes import (
-    MetaGenSupportedFileExtensions,
-    MetaGenSupportedLoadingModes,
-)
+from pymetagen.datatypes import MetaGenSupportedFileExtensions
 from pymetagen.utils import selectively_update_dict
 
 
@@ -102,154 +99,153 @@ POLARS_DEFAULT_READ_CSV_OPTIONS: dict[str, Any] = {
     "raise_if_empty": True,
 }
 
-LIST_OF_EXCEL_OPTIONS_FROM_CSV_OPTIONS = [
+POLARS_DEFAULT_LAZY_READ_CSV_OPTIONS: dict[str, Any] = (
+    POLARS_DEFAULT_READ_CSV_OPTIONS.copy()
+)
+lazy_csv_unsupported_options = [
+    "columns",
+    "use_pyarrow",
+    "n_threads",
+    "batch_size",
     "storage_options",
     "sample_size",
-    "has_header",
-    "new_columns",
-    "separator",
-    "comment_char",
-    "quote_char",
-    "skip_rows",
-    "dtypes",
-    "null_values",
-    "missing_utf8_is_empty_string",
-    "ignore_errors",
-    "try_parse_dates",
-    "infer_schema_length",
-    "n_rows",
-    "encoding",
-    "low_memory",
-    "rechunk",
-    "skip_rows_after_header",
-    "row_count_name",
-    "row_count_offset",
-    "eol_char",
-    "raise_if_empty",
 ]
+for option in lazy_csv_unsupported_options:
+    del POLARS_DEFAULT_LAZY_READ_CSV_OPTIONS[option]
+
+LIST_OF_EXCEL_OPTIONS_FROM_CSV_OPTIONS = [
+    # "storage_options",
+    # "sample_size",
+    # "quote_char",
+    # "skip_rows",
+    # "dtypes",
+    # "null_values",
+    # "missing_utf8_is_empty_string",
+    # "ignore_errors",
+    # "try_parse_dates",
+    # "infer_schema_length",
+    # "encoding",
+    # "skip_rows_after_header",
+    # "eol_char",
+    # "raise_if_empty",
+]
+POLARS_DEFAULT_READ_EXCEL_OPTIONS: dict[str, Any] = {
+    key: value
+    for key, value in POLARS_DEFAULT_READ_CSV_OPTIONS.items()
+    if key in LIST_OF_EXCEL_OPTIONS_FROM_CSV_OPTIONS
+}
+POLARS_DEFAULT_READ_EXCEL_OPTIONS["engine"] = "openpyxl"
 
 
-LIST_OF_EXCEL_OPTIONS_FROM_CSV_OPTIONS
+POLARS_DEFAULT_READ_PARUET_OPTIONS = {}
 
 
 class DataLoader:
     def __init__(
         self,
-        input_file: Path,
-        mode: MetaGenSupportedLoadingModes = MetaGenSupportedLoadingModes.LAZY,
+        path: Path,
         polars_read_csv_options: None | dict[str, Any] = None,
         sheet_name: str | None = None,
-        cache: bool = True,
-        with_columns_names: Callable[[list[str]], list[str]] | None = None,
+        _default_read_csv_options: dict[
+            str, Any
+        ] = POLARS_DEFAULT_READ_CSV_OPTIONS,
+        _default_read_excel_options: dict[
+            str, Any
+        ] = POLARS_DEFAULT_READ_EXCEL_OPTIONS,
+        _default_read_parquet_options: dict[
+            str, Any
+        ] = POLARS_DEFAULT_READ_PARUET_OPTIONS,
     ):
-        self.input_file = input_file
-        self.polars_read_csv_options = self.update_read_csv_polars_options(
-            polars_read_csv_options
-        )
-        self.polars_read_excel_options = self.update_polars_read_excel_options(
+        self.path = path
+        self.polars_read_csv_options = _default_read_csv_options.copy()
+        self._update_read_csv_polars_options(polars_read_csv_options)
+        self.polars_read_excel_options = _default_read_excel_options.copy()
+        self._update_polars_read_excel_options(
             sheet_name,
-            cache=cache,
-            with_columns_names=with_columns_names,
         )
-        self.data = self.load(mode)
+        self.polars_read_parquet_options = _default_read_parquet_options.copy()
+
+    def __call__(self):
+        return self.load()
 
     def load(
         self,
-        mode: MetaGenSupportedLoadingModes,
-    ) -> pl.LazyFrame | pl.DataFrame:
-        _, file_extension = self.input_file.suffixes[-1]
-        if file_extension not in MetaGenSupportedFileExtensions.list():
-            raise NotImplementedError(
-                f"File {file_extension} not yet implemented. Only supported"
-                f" file extensions: {MetaGenSupportedFileExtensions.list()}"
-            )
-        if "csv" == file_extension:
-            self.load_csv_data(mode)
-        elif "xlsx" == file_extension:
-            self.load_excel_data(mode)
-        elif file_extension == "parquet":
-            self.load_parquet_data(mode)
-        elif "json" == file_extension:
-            self.load_json_data(mode)
-
-    def get_polars_read_excel_options(self):
-        return {
-            key: value
-            for key, value in POLARS_DEFAULT_READ_CSV_OPTIONS
-            if key in LIST_OF_EXCEL_OPTIONS_FROM_CSV_OPTIONS
+    ) -> pl.DataFrame:
+        extension_mapping = {
+            MetaGenSupportedFileExtensions.CSV: self._load_csv_data,
+            MetaGenSupportedFileExtensions.XLSX: self._load_excel_data,
+            MetaGenSupportedFileExtensions.PARQUET: self._load_parquet_data,
+            MetaGenSupportedFileExtensions.JSON: self._load_json_data,
         }
+        file_extension = self.path.suffixes[-1]
+        try:
+            return extension_mapping[file_extension]()
+        except KeyError:
+            raise NotImplementedError(
+                f"File extension {file_extension} is not supported"
+            )
 
-    def update_polars_read_excel_options(
+    def _update_polars_read_excel_options(
         self,
         sheet_name: str,
-        cache: bool,
-        with_columns_names: Callable[[list[str]], list[str]] | None,
     ) -> dict[str, Any]:
-        polars_read_excel_options = self.get_polars_read_excel_options()
-        polars_read_excel_options["sheet_name"] = sheet_name
-        polars_read_excel_options["cache"] = cache
-        polars_read_excel_options["with_column_names"] = with_columns_names
-        return polars_read_excel_options
+        self.polars_read_excel_options["sheet_name"] = sheet_name
+        return self.polars_read_excel_options
 
-    def update_read_csv_polars_options(
+    def _update_read_csv_polars_options(
         self, polars_read_csv_options: dict[str, Any] | None
     ) -> dict[str, Any]:
-        d = POLARS_DEFAULT_READ_CSV_OPTIONS.copy()
         if polars_read_csv_options is None:
-            return d
-        selectively_update_dict(d, polars_read_csv_options)
-        return d
+            return
+        selectively_update_dict(
+            self.polars_read_csv_options, polars_read_csv_options
+        )
 
-    def load_csv_data(
-        self, mode: MetaGenSupportedLoadingModes
-    ) -> pl.LazyFrame | pl.DataFrame:
-        if mode not in MetaGenSupportedLoadingModes.list():
-            raise KeyError(
-                f"Unknownn load mode: {mode}. Change to one of supported"
-                f" loading modes: {MetaGenSupportedLoadingModes.list()}"
-            )
-        if mode == MetaGenSupportedLoadingModes.LAZY:
-            return pl.scan_csv(
-                source=self.input_file, **self.polars_read_csv_options
-            )
-        elif mode == MetaGenSupportedLoadingModes.FULL:
-            return pl.read_csv(
-                source=self.input_file, **self.polars_read_csv_options
-            )
+    def _load_csv_data(self) -> pl.DataFrame:
+        return pl.read_csv(source=self.path, **self.polars_read_csv_options)
 
-    def load_excel_data(
-        self, mode: MetaGenSupportedLoadingModes
-    ) -> pl.LazyFrame | pl.DataFrame:
-        if mode not in MetaGenSupportedLoadingModes.list():
-            raise KeyError(
-                f"Unknown load mode: {mode}. Change to"
-                f" {MetaGenSupportedLoadingModes.FULL} for Excel files"
-                " loading."
-            )
-        if mode == MetaGenSupportedLoadingModes.LAZY:
-            raise NotImplementedError(
-                "Lazy mode is not implemented for Excel files, use loading"
-                f" mode: {MetaGenSupportedLoadingModes.FULL}."
-            )
-        elif mode == MetaGenSupportedLoadingModes.FULL:
-            return pl.read_excel(
-                source=self.input_file, **self.polars_read_excel_options
-            )
+    def _load_excel_data(self) -> pl.DataFrame:
+        return pl.read_excel(
+            source=self.path, **self.polars_read_excel_options
+        )
 
-    def load_parquet_data(
-        self, mode: MetaGenSupportedLoadingModes
-    ) -> pl.LazyFrame | pl.DataFrame:
-        if mode not in MetaGenSupportedLoadingModes.list():
-            raise KeyError(
-                f"Unknown read mode: {mode}. Change to"
-                f" {MetaGenSupportedLoadingModes.FULL} for Excel files"
-                " loading."
-            )
-        if mode == MetaGenSupportedLoadingModes.LAZY:
-            return pl.scan_parquet(
-                source=self.input_file, **self.polars_read_csv_options
-            )
-        elif mode == MetaGenSupportedLoadingModes.FULL:
-            return pl.read_parquet(
-                source=self.input_file, **self.polars_read_csv_options
-            )
+    def _load_parquet_data(self) -> pl.DataFrame:
+        return pl.read_parquet(
+            source=self.path, **self.polars_read_parquet_options
+        )
+
+    def _load_json_data(self):
+        raise NotImplementedError
+
+
+class LazyDataLoader(DataLoader):
+    def __init__(
+        self,
+        path: Path,
+        polars_read_csv_options: None | dict[str, Any] = None,
+        sheet_name: str | None = None,
+    ):
+        super().__init__(
+            path=path,
+            polars_read_csv_options=polars_read_csv_options,
+            sheet_name=sheet_name,
+            _default_read_csv_options=POLARS_DEFAULT_LAZY_READ_CSV_OPTIONS,
+        )
+
+    def load(self) -> pl.LazyFrame:
+        return super().load()
+
+    def _load_csv_data(self) -> pl.LazyFrame:
+        return pl.scan_csv(source=self.path, **self.polars_read_csv_options)
+
+    def _load_excel_data(self) -> pl.DataFrame:
+        warnings.warn(
+            "Excel files are not supported in lazy mode, switching to full"
+            " mode"
+        )
+        return super()._load_excel_data()
+
+    def _load_parquet_data(self) -> pl.LazyFrame:
+        return pl.scan_parquet(
+            source=self.path, **self.polars_read_parquet_options
+        )
