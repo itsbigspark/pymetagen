@@ -62,6 +62,32 @@ class MetaGenDataType(str, Enum):
     Utf8 = "Utf8"
     Unknown = "Unknown"
 
+    numeric_data_types: list[MetaGenDataType] = [
+        Decimal,
+        Float32,
+        Float64,
+        Int8,
+        Int16,
+        Int32,
+        Int64,
+        UInt8,
+        UInt16,
+        UInt32,
+        UInt64,
+    ]
+
+    date_data_types: list[MetaGenDataType] = [
+        Date,
+        Datetime,
+        Duration,
+        Time,
+    ]
+
+    categorical_data_types: list[MetaGenDataType] = [
+        Categorical,
+        Utf8,
+    ]
+
     @classmethod
     def polars_datatypes(cls) -> list[MetaGenDataType]:
         return [
