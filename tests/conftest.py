@@ -15,8 +15,13 @@ def input_csv_path() -> Path:
 
 
 @pytest.fixture
-def data(input_csv_path: Path) -> pl.DataFrame:
+def eager_data(input_csv_path: Path) -> pl.DataFrame:
     return pl.read_csv(input_csv_path)
+
+
+@pytest.fixture
+def lazy_data(input_csv_path: Path) -> pl.LazyFrame:
+    return pl.scan_csv(input_csv_path, low_memory=False)
 
 
 @pytest.fixture

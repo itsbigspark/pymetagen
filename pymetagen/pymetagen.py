@@ -51,6 +51,7 @@ class MetaGen:
 
 import json
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 import polars as pl
@@ -122,68 +123,74 @@ class MetaGen:
             "# unique",
             "Values",
         ]
-        metadata_table = self.get_simple_metadata(
+
+        assert_msg = (
+            "Internal error: while calculating '{}' metadata."
+            " Number of columns in metadata table does not match number of"
+            " columns in data."
+        )
+
+        metadata: dict[str, dict[str, Any]] = {}
+
+        simple_metadata = self.get_simple_metadata(
             columns_to_drop=columns_to_drop
         )
-        assert len(metadata_table) == len(self.data.columns)
-        number_of_null_and_zeros = self.number_of_null_and_zeros()
-        assert len(number_of_null_and_zeros) == len(self.data.columns)
-        number_of_positive_values = self.number_of_positive_values()
-        assert len(number_of_positive_values) == len(self.data.columns)
-        number_of_negative_values = self.number_of_negative_values()
-        assert len(number_of_negative_values) == len(self.data.columns)
-        minimal_string_length = self.minimal_string_length()
-        assert len(minimal_string_length) == len(self.data.columns)
-        maximal_string_length = self.maximal_string_length()
-        assert len(maximal_string_length) == len(self.data.columns)
-        number_of_unique_counts = self.number_of_unique_counts()
-        assert len(number_of_unique_counts) == len(self.data.columns)
-        number_of_unique_values = self.number_of_unique_values()
-        assert len(number_of_unique_values) == len(self.data.columns)
+        for column, data in simple_metadata.items():
+            assert len(data) == len(self.data.columns), assert_msg.format(
+                column
+            )
+        metadata.update(simple_metadata)
 
-        metadata = (
-            metadata_table.merge(
-                number_of_null_and_zeros,
-                on="Name",
-                how="left",
-            )
-            .merge(
-                number_of_positive_values,
-                on="Name",
-                how="left",
-            )
-            .merge(
-                number_of_negative_values,
-                on="Name",
-                how="left",
-            )
-            .merge(
-                minimal_string_length,
-                on="Name",
-                how="left",
-            )
-            .merge(
-                maximal_string_length,
-                on="Name",
-                how="left",
-            )
-            .merge(
-                number_of_unique_counts,
-                on="Name",
-                how="left",
-            )
-            .merge(
-                number_of_unique_values,
-                on="Name",
-                how="left",
-            )
-        )
-        metadata = metadata.set_index("Name")
+        number_of_null_and_zeros = self.number_of_null_and_zeros()
+        assert len(number_of_null_and_zeros) == len(
+            self.data.columns
+        ), assert_msg.format("null and zeros")
+        metadata["# empty/zero"] = number_of_null_and_zeros
+
+        number_of_positive_values = self.number_of_positive_values()
+        assert len(number_of_positive_values) == len(
+            self.data.columns
+        ), assert_msg.format("positive values")
+        metadata["# positive"] = number_of_positive_values
+
+        number_of_negative_values = self.number_of_negative_values()
+        assert len(number_of_negative_values) == len(
+            self.data.columns
+        ), assert_msg.format("negative values")
+        metadata["# negative"] = number_of_negative_values
+
+        minimal_string_length = self.minimal_string_length()
+        assert len(minimal_string_length) == len(
+            self.data.columns
+        ), assert_msg.format("minimal string length")
+        metadata["Min Length"] = minimal_string_length
+
+        maximal_string_length = self.maximal_string_length()
+        assert len(maximal_string_length) == len(
+            self.data.columns
+        ), assert_msg.format("maximal string length")
+        metadata["Max Length"] = maximal_string_length
+
+        number_of_unique_counts = self.number_of_unique_counts()
+        assert len(number_of_unique_counts) == len(
+            self.data.columns
+        ), assert_msg.format("number of unique counts")
+        metadata["# unique"] = number_of_unique_counts
+
+        number_of_unique_values = self.number_of_unique_values()
+        assert len(number_of_unique_values) == len(
+            self.data.columns
+        ), assert_msg.format("number of unique values")
+        metadata["Values"] = number_of_unique_values
+
+        metadata: pd.DataFrame = pd.DataFrame(metadata)
+        metadata.index.name = "Name"
+
         return metadata[pymetagen_columns]
 
     def get_simple_metadata(
         self, columns_to_drop: list[str] = None
-    ) -> pd.DataFrame:
+    ) -> dict[str, dict[str, Any]]:
         metadata_table = (
             self.data.describe()
             .to_pandas()
@@ -199,28 +206,21 @@ class MetaGen:
                     "std": "Std",
                 }
             )
+            .to_dict()
         )
 
-        types = pd.DataFrame(
-            list(
-                zip(
-                    self.data.columns,
-                    [
-                        MetaGenDataType.polars_to_metagen_type(_type).value
-                        for _type in self.data.dtypes
-                    ],
-                )
-            ),
-            columns=["Name", "Type"],
-        )
-        metadata_table = (
-            metadata_table.reset_index()
-            .rename(columns={"index": "Name"})
-            .merge(types, on="Name")
+        metadata_table["Type"] = dict(
+            zip(
+                self.data.columns,
+                [
+                    MetaGenDataType.polars_to_metagen_type(_type).value
+                    for _type in self.data.dtypes
+                ],
+            )
         )
         return metadata_table
 
-    def number_of_null_and_zeros(self) -> pd.DataFrame:
+    def number_of_null_and_zeros(self) -> dict[str, int]:
         nulls = {}
         for col in self.data.columns:
             column_dtype = self.data.select(col).dtypes.pop().__name__
@@ -232,14 +232,9 @@ class MetaGen:
                 else 0
             )
             nulls[col] = zero_count + null_count
-        return (
-            pd.DataFrame([nulls])
-            .T.reset_index()
-            .rename(columns={"index": "Name", 0: "# empty/zero"})
-            .astype({"# empty/zero": "Int64"})
-        )
+        return nulls
 
-    def number_of_positive_values(self) -> pd.DataFrame:
+    def number_of_positive_values(self) -> dict[str, int]:
         pos = {}
         for col in self.data.columns:
             column_dtype = self.data.select(col).dtypes.pop().__name__
@@ -249,14 +244,9 @@ class MetaGen:
                 else None
             )
             pos[col] = pos_count
-        return (
-            pd.DataFrame([pos])
-            .T.reset_index()
-            .rename(columns={"index": "Name", 0: "# positive"})
-            .astype({"# positive": "Int64"})
-        )
+        return pos
 
-    def number_of_negative_values(self) -> pd.DataFrame:
+    def number_of_negative_values(self) -> dict[str, int]:
         neg = {}
         for col in self.data.columns:
             column_dtype = self.data.select(col).dtypes.pop().__name__
@@ -266,14 +256,9 @@ class MetaGen:
                 else None
             )
             neg[col] = neg_count
-        return (
-            pd.DataFrame([neg])
-            .T.reset_index()
-            .rename(columns={"index": "Name", 0: "# negative"})
-            .astype({"# negative": "Int64"})
-        )
+        return neg
 
-    def minimal_string_length(self) -> pd.DataFrame:
+    def minimal_string_length(self) -> dict[str, int]:
         min_str_length = {}
         for col in self.data.columns:
             column_dtype = self.data.select(col).dtypes.pop().__name__
@@ -288,14 +273,9 @@ class MetaGen:
                 )
             else:
                 min_str_length[col] = None
-        return (
-            pd.DataFrame([min_str_length])
-            .T.reset_index()
-            .rename(columns={"index": "Name", 0: "Min Length"})
-            .astype({"Min Length": "Int64"})
-        )
+        return min_str_length
 
-    def maximal_string_length(self) -> pd.DataFrame:
+    def maximal_string_length(self) -> dict[str, int]:
         max_str_length = {}
         for col in self.data.columns:
             column_dtype = self.data.select(col).dtypes.pop().__name__
@@ -310,27 +290,17 @@ class MetaGen:
                 )
             else:
                 max_str_length[col] = None
-        return (
-            pd.DataFrame([max_str_length])
-            .T.reset_index()
-            .rename(columns={"index": "Name", 0: "Max Length"})
-            .astype({"Max Length": "Int64"})
-        )
+        return max_str_length
 
-    def number_of_unique_counts(self) -> pd.DataFrame:
+    def number_of_unique_counts(self) -> dict[str, int]:
         unique_counts = {}
         for col in self.data.columns:
             unique_counts[col] = self.data.select(col).n_unique()
-        return (
-            pd.DataFrame([unique_counts])
-            .T.reset_index()
-            .rename(columns={"index": "Name", 0: "# unique"})
-            .astype({"# unique": "Int64"})
-        )
+        return unique_counts
 
     def number_of_unique_values(
         self, max_number_of_unique_to_show: int = 7
-    ) -> pd.DataFrame:
+    ) -> dict[str, int]:
         unique_values = {}
         for col in self.data.columns:
             unique_values[col] = self.data.select(col).unique()[col].to_list()
@@ -339,11 +309,7 @@ class MetaGen:
             col: _list if len(_list) < max_number_of_unique_to_show else None
             for col, _list in unique_values.items()
         }
-        return (
-            pd.DataFrame([unique_values])
-            .T.reset_index()
-            .rename(columns={"index": "Name", 0: "Values"})
-        )
+        return unique_values
 
     def write_metadata(self, output_path: str | Path) -> None:
         output_path = Path(output_path)
