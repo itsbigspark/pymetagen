@@ -21,7 +21,7 @@ import os
 class MetaGen:
     def __init__(
         self,
-        input_data: pl.DataFrame | pl.LazyFrame,
+        input_data: DataFrameT,
         output_path: str,
         create_regex: bool | None = None,
         descriptions: pl.LazyFrame | None  = None,
@@ -51,32 +51,31 @@ class MetaGen:
 
 import json
 import os
+from pathlib import Path
+
 import polars as pl
 import pandas as pd
 
-from pymetagen.pymetagen.data_loader import DataLoader
-from pymetagen.pymetagen.datatypes import (
+from pymetagen.dataloader import DataLoader, LazyDataLoader
+from pymetagen.datatypes import (
     MetaGenDataType,
     MetaGenSupportedFileExtensions,
     MetaGenSupportedLoadingModes,
 )
+from pymetagen.exceptions import LoadingModeUnsupportedError
+from pymetagen.typing import DataFrameT
 
 
 class MetaGen:
     def __init__(
         self,
-        input_data: str | pl.DataFrame | pl.LazyFrame,
-        output_path: str,
-        mode: MetaGenSupportedLoadingModes = MetaGenSupportedLoadingModes.lazy,
+        data: DataFrameT,
+        outpath: Path,
         create_regex: bool | None = None,
         descriptions: pl.LazyFrame | None = None,
     ):
-        self.data = (
-            self.load_data(input_data, mode)
-            if isinstance(input_data, str)
-            else input_data
-        )
-        self.output_path = output_path
+        self.data = data
+        self.output_path = outpath
         self.create_regex = create_regex
         self.descriptions = descriptions
 
@@ -96,13 +95,34 @@ class MetaGen:
         elif 'json' in ext_output:
             self.write_json_metadata(output_path)
 
-    def load_data(
-        self,
-        input_file: str,
-        mode: MetaGenSupportedLoadingModes = MetaGenSupportedLoadingModes.lazy,
-    ) -> pl.LazyFrame:
-        data_loader = DataLoader(input_file, mode)
-        return data_loader.data
+    @classmethod
+    def from_path(
+        cls,
+        path: Path,
+        outpath: Path,
+        create_regex: bool | None = None,
+        descriptions: pl.LazyFrame | None = None,
+        mode: MetaGenSupportedLoadingModes = MetaGenSupportedLoadingModes.LAZY,
+    ) -> DataFrameT:
+        mode_mapping = {
+            MetaGenSupportedLoadingModes.LAZY: LazyDataLoader,
+            MetaGenSupportedLoadingModes.FULL: DataLoader,
+        }
+        try:
+            LoaderClass = mode_mapping[mode]
+        except KeyError:
+            raise LoadingModeUnsupportedError(
+                f"Mode {mode} is not supported. Supported modes are: "
+                f"{MetaGenSupportedLoadingModes.list()}"
+            )
+        data = LoaderClass(path)()
+
+        return cls(
+            data=data,
+            outpath=outpath,
+            create_regex=create_regex,
+            descriptions=descriptions,
+        )
 
     def _compute_metadata(self) -> pd.DataFrame:
         columns_to_drop = [
