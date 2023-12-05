@@ -1,0 +1,71 @@
+version: 2.1
+
+commands:
+
+  checkout-install:
+    description: |
+      Checkout the code and install dependencies
+    steps:
+      - checkout
+      - restore_cache:
+          key: poetry-cache-{{ checksum "poetry.lock" }}
+      - run:
+          name: Install dependencies
+          command: poetry install --sync
+      - save_cache:
+          key: poetry-cache-{{ checksum "poetry.lock" }}
+          paths:
+            - /home/circleci/.cache/pypoetry
+  
+  save-test-results:
+    description: |
+      Save test results
+    steps:
+      - store_artifacts:
+          path: test-reports/
+      - store_test_results:
+          path: test-reports     
+
+  pre-commit-check:
+    description: |
+      Run pre-commit checks
+    steps:
+      - restore_cache:
+          key: pre-commit-cache-{{ checksum ".pre-commit-config.yaml" }}
+      - run: poetry run pre-commit run --all-files
+      - save_cache:
+          key: pre-commit-cache-{{ checksum ".pre-commit-config.yaml" }}
+          paths:
+            - ~/.cache/pre-commit
+
+executors:
+  docker_small:
+    docker:
+      - image: cimg/python:3.11.4
+    resource_class: small
+
+jobs:
+
+  unit-tests:
+    executor: docker_small
+    steps:
+      - checkout-install
+      - pre-commit-check
+      - run:
+          name: Run tests
+          command: |
+            poetry run coverage run -m pytest -v
+      - save-test-results
+      - store_artifacts:
+          path: .coverage
+      # TODO upload to coveralls/codecov or similar (complicated with parallelism)
+      - run:
+          name: Coverage Report
+          command: |
+            poetry run coverage report -m
+
+workflows:
+  commit:
+    # run on every commit
+    jobs:
+      - unit-tests

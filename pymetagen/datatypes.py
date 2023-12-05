@@ -1,72 +1,92 @@
 from __future__ import annotations
 
-import polars as pl
-
 from enum import Enum
 
+import polars as pl
 
-class MetaGenSupportedLoadingModes(str, Enum):
-    lazy = 'lazy'
-    full = 'full'
-
-    @classmethod
-    def list(cls) -> list[str]:
-        return list(map(lambda c: c.value, cls))
+from pymetagen.utils import EnumListMixin
 
 
-class MetaGenSupportedFileExtensions(str, Enum):
-    csv = 'csv'
-    json = 'json'
-    parquet = 'parquet'
-    xlsx = 'xlsx'
+class MetaGenSupportedLoadingModes(EnumListMixin, str, Enum):
+    LAZY = "lazy"
+    FULL = "full"
 
-    @classmethod
-    def list(cls) -> list[str]:
-        return list(map(lambda c: c.value, cls))
+
+class MetaGenSupportedFileExtensions(EnumListMixin, str, Enum):
+    CSV = ".csv"
+    JSON = ".json"
+    PARQUET = ".parquet"
+    XLSX = ".xlsx"
 
 
 class MetaGenDataType(str, Enum):
-    string = 'string'
-    float = 'float'
-    integer = 'integer'
-    bool = 'bool'
-    date = 'date'
-    datetime = 'datetime'
-    list = 'list'
-    dict = 'dict'
-    array = 'array'
-    binary = 'binary'
-    category = 'category'
-    object = 'object'
-    unknown = 'unknown'
-    null = 'null'
+    string = "string"
+    float = "float"
+    integer = "integer"
+    bool = "bool"
+    date = "date"
+    datetime = "datetime"
+    list = "list"
+    dict = "dict"
+    array = "array"
+    binary = "binary"
+    category = "category"
+    object = "object"
+    unknown = "unknown"
+    null = "null"
 
     # Polars data types
-    Decimal = 'Decimal'
-    Float32 = 'Float32'
-    Float64 = 'Float64'
-    Int8 = 'Int8'
-    Int16 = 'Int16'
-    Int32 = 'Int32'
-    Int64 = 'Int64'
-    UInt8 = 'UInt8'
-    UInt16 = 'UInt16'
-    UInt32 = 'UInt32'
-    UInt64 = 'UInt64'
-    Date = 'Date'
-    Datetime = 'Datetime'
-    Duration = 'Duration'
-    Time = 'Time'
-    Array = 'Array'
-    List = 'List'
-    Struct = 'Struct'
-    Boolean = 'Boolean'
-    Binary = 'Binary'
-    Categorical = 'Categorical'
-    Null = 'Null'
-    Object = 'Object'
-    Utf8 = 'Utf8'
-    Unknown = 'Unknown'
+    Decimal = "Decimal"
+    Float32 = "Float32"
+    Float64 = "Float64"
+    Int8 = "Int8"
+    Int16 = "Int16"
+    Int32 = "Int32"
+    Int64 = "Int64"
+    UInt8 = "UInt8"
+    UInt16 = "UInt16"
+    UInt32 = "UInt32"
+    UInt64 = "UInt64"
+    Date = "Date"
+    Datetime = "Datetime"
+    Duration = "Duration"
+    Time = "Time"
+    Array = "Array"
+    List = "List"
+    Struct = "Struct"
+    Boolean = "Boolean"
+    Binary = "Binary"
+    Categorical = "Categorical"
+    Null = "Null"
+    Object = "Object"
+    Utf8 = "Utf8"
+    Unknown = "Unknown"
+
+    numeric_data_types: list[MetaGenDataType] = [
+        Decimal,
+        Float32,
+        Float64,
+        Int8,
+        Int16,
+        Int32,
+        Int64,
+        UInt8,
+        UInt16,
+        UInt32,
+        UInt64,
+    ]
+
+    date_data_types: list[MetaGenDataType] = [
+        Date,
+        Datetime,
+        Duration,
+        Time,
+    ]
+
+    categorical_data_types: list[MetaGenDataType] = [
+        Categorical,
+        Utf8,
+    ]
 
     @classmethod
     def polars_datatypes(cls) -> list[MetaGenDataType]:
@@ -81,12 +101,12 @@ class MetaGenDataType(str, Enum):
         cls, polars_data_type: pl.DataType
     ) -> MetaGenDataType:
         if type(polars_data_type) != type(pl.DataType):  # noqa: E721
-            raise TypeError(f'{polars_data_type} is not a polars.DataType')
+            raise TypeError(f"{polars_data_type} is not a polars.DataType")
 
         _type = polars_data_type.base_type().__name__
         if _type not in cls.polars_datatypes():
             raise NotImplementedError(
-                f'Polar data type {_type} not yet implemented'
+                f"Polar data type {_type} not yet implemented"
             )
 
         if _type in FloatTypes:
