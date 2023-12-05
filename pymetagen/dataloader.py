@@ -33,6 +33,7 @@ polars_default_read_csv_options
 }
 """
 
+import os
 import warnings
 from pathlib import Path
 from typing import Any
@@ -162,9 +163,6 @@ class DataLoader:
         self.polars_read_csv_options = _default_read_csv_options.copy()
         self._update_read_csv_polars_options(polars_read_csv_options)
         self.polars_read_excel_options = _default_read_excel_options.copy()
-        self._update_polars_read_excel_options(
-            sheet_name,
-        )
         self.polars_read_parquet_options = _default_read_parquet_options.copy()
 
     def __call__(self):
@@ -179,7 +177,8 @@ class DataLoader:
             MetaGenSupportedFileExtensions.PARQUET: self._load_parquet_data,
             MetaGenSupportedFileExtensions.JSON: self._load_json_data,
         }
-        file_extension = self.path.suffixes[-1]
+
+        file_extension = f'.{os.path.basename(self.path).split(".")[-1]}'
         try:
             return extension_mapping[file_extension]()
         except KeyError:

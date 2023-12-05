@@ -138,9 +138,6 @@ class DataLoader:
         input_file: str,
         mode: MetaGenSupportedLoadingModes = MetaGenSupportedLoadingModes.lazy,
         polars_read_csv_options: None | dict[str, Any] = None,
-        sheet_name: str | None = None,
-        cache: bool = True,
-        with_columns_names: Callable[[list[str]], list[str]] | None = None,
     ):
         self.input_file = input_file
         self.polars_read_csv_options = self.update_read_csv_polars_options(

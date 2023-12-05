@@ -79,22 +79,6 @@ class MetaGen:
         self.create_regex = create_regex
         self.descriptions = descriptions
 
-    def write_metadata(self, output_path: str | None = None) -> None:
-        if output_path is None:
-            output_path = self.output_path
-        basename, ext_output = tuple(os.path.basename(output_path).split('.'))
-        if ext_output not in MetaGenSupportedFileExtensions.list():
-            raise NotImplementedError(
-                f"File {ext_output} not yet implemented. Only supported file"
-                f" extensions: {MetaGenSupportedFileExtensions.list()}"
-            )
-        if 'csv' in ext_output:
-            self.write_csv_metadata(output_path)
-        elif 'xlsx' in ext_output:
-            self.write_excel_metadata(output_path)
-        elif 'json' in ext_output:
-            self.write_json_metadata(output_path)
-
     @classmethod
     def from_path(
         cls,
@@ -198,7 +182,7 @@ class MetaGen:
         self, columns_to_drop: list[str] = None
     ) -> pd.DataFrame:
         metadata_table = (
-            self.data.collect()
+            self.data.data.collect()
             .describe()
             .to_pandas()
             .rename(columns={"describe": "Name"})
@@ -219,10 +203,10 @@ class MetaGen:
         types = pd.DataFrame(
             list(
                 zip(
-                    self.data.columns,
+                    self.data.data.columns,
                     [
                         MetaGenDataType.polars_to_metagen_type(_type).value
-                        for _type in self.data.dtypes
+                        for _type in self.data.data.dtypes
                     ],
                 )
             ),
@@ -237,9 +221,9 @@ class MetaGen:
 
     def number_of_null_and_zeros(self) -> pd.DataFrame:
         nulls = {}
-        for col in self.data.columns:
-            column_dtype = self.data.select(col).dtypes.pop().__name__
-            data = self.data.select(col).collect()
+        for col in self.data.data.columns:
+            column_dtype = self.data.data.select(col).dtypes.pop().__name__
+            data = self.data.data.select(col).collect()
             null_count = data.null_count().row(0)[0]
             zero_count = (
                 data.filter(pl.col(col) == 0).shape[0]
@@ -256,10 +240,10 @@ class MetaGen:
 
     def number_of_positive_values(self) -> pd.DataFrame:
         pos = {}
-        for col in self.data.columns:
-            column_dtype = self.data.select(col).dtypes.pop().__name__
+        for col in self.data.data.columns:
+            column_dtype = self.data.data.select(col).dtypes.pop().__name__
             pos_count = (
-                self.data.filter(pl.col(col) > 0).collect().shape[0]
+                self.data.data.filter(pl.col(col) > 0).collect().shape[0]
                 if column_dtype in MetaGenDataType.numeric_data_types
                 else None
             )
@@ -273,10 +257,10 @@ class MetaGen:
 
     def number_of_negative_values(self) -> pd.DataFrame:
         neg = {}
-        for col in self.data.columns:
-            column_dtype = self.data.select(col).dtypes.pop().__name__
+        for col in self.data.data.columns:
+            column_dtype = self.data.data.select(col).dtypes.pop().__name__
             neg_count = (
-                self.data.filter(pl.col(col) < 0).collect().shape[0]
+                self.data.data.filter(pl.col(col) < 0).collect().shape[0]
                 if column_dtype in MetaGenDataType.numeric_data_types
                 else None
             )
@@ -290,11 +274,11 @@ class MetaGen:
 
     def minimal_string_length(self) -> pd.DataFrame:
         min_str_length = {}
-        for col in self.data.columns:
-            column_dtype = self.data.select(col).dtypes.pop().__name__
+        for col in self.data.data.columns:
+            column_dtype = self.data.data.select(col).dtypes.pop().__name__
             if column_dtype in MetaGenDataType.categorical_data_types:
                 min_str_length[col] = (
-                    self.data.with_columns(
+                    self.data.data.with_columns(
                         pl.col(col).str.lengths().alias(f"{col}_len")
                     )
                     .select(f"{col}_len")
@@ -313,11 +297,11 @@ class MetaGen:
 
     def maximal_string_length(self) -> pd.DataFrame:
         max_str_length = {}
-        for col in self.data.columns:
-            column_dtype = self.data.select(col).dtypes.pop().__name__
+        for col in self.data.data.columns:
+            column_dtype = self.data.data.select(col).dtypes.pop().__name__
             if column_dtype in MetaGenDataType.categorical_data_types:
                 max_str_length[col] = (
-                    self.data.with_columns(
+                    self.data.data.with_columns(
                         pl.col(col).str.lengths().alias(f"{col}_len")
                     )
                     .select(f"{col}_len")
@@ -336,8 +320,10 @@ class MetaGen:
 
     def number_of_unique_counts(self) -> pd.DataFrame:
         unique_counts = {}
-        for col in self.data.columns:
-            unique_counts[col] = self.data.select(col).collect().n_unique()
+        for col in self.data.data.columns:
+            unique_counts[col] = (
+                self.data.data.select(col).collect().n_unique()
+            )
         return (
             pd.DataFrame([unique_counts])
             .T.reset_index()
@@ -349,9 +335,9 @@ class MetaGen:
         self, max_number_of_unique_to_show: int = 7
     ) -> pd.DataFrame:
         unique_values = {}
-        for col in self.data.columns:
+        for col in self.data.data.columns:
             unique_values[col] = (
-                self.data.select(col).collect().unique()[col].to_list()
+                self.data.data.select(col).collect().unique()[col].to_list()
             )
 
         unique_values = {
@@ -367,6 +353,22 @@ class MetaGen:
             .T.reset_index()
             .rename(columns={"index": "Name", 0: "Values"})
         )
+
+    def write_metadata(self, output_path: str | None = None) -> None:
+        if output_path is None:
+            output_path = self.output_path
+        basename, ext_output = tuple(os.path.basename(output_path).split('.'))
+        if f".{ext_output}" not in MetaGenSupportedFileExtensions.list():
+            raise NotImplementedError(
+                f"File {ext_output} not yet implemented. Only supported file"
+                f" extensions: {MetaGenSupportedFileExtensions.list()}"
+            )
+        if 'csv' in ext_output:
+            self.write_csv_metadata(output_path)
+        elif 'xlsx' in ext_output:
+            self.write_excel_metadata(output_path)
+        elif 'json' in ext_output:
+            self.write_json_metadata(output_path)
 
     def write_excel_metadata(self, output_path: str) -> None:
         if output_path is None:
