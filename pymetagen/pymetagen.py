@@ -53,8 +53,8 @@ import json
 import os
 from pathlib import Path
 
-import polars as pl
 import pandas as pd
+import polars as pl
 
 from pymetagen.dataloader import DataLoader, LazyDataLoader
 from pymetagen.datatypes import (
@@ -110,9 +110,9 @@ class MetaGen:
 
     def _compute_metadata(self) -> pd.DataFrame:
         columns_to_drop = [
-            '25%',
-            '50%',
-            '75%',
+            "25%",
+            "50%",
+            "75%",
         ]
         pymetage_columns = [
             "Name",
@@ -357,17 +357,17 @@ class MetaGen:
     def write_metadata(self, output_path: str | None = None) -> None:
         if output_path is None:
             output_path = self.output_path
-        basename, ext_output = tuple(os.path.basename(output_path).split('.'))
+        basename, ext_output = tuple(os.path.basename(output_path).split("."))
         if f".{ext_output}" not in MetaGenSupportedFileExtensions.list():
             raise NotImplementedError(
                 f"File {ext_output} not yet implemented. Only supported file"
                 f" extensions: {MetaGenSupportedFileExtensions.list()}"
             )
-        if 'csv' in ext_output:
+        if "csv" in ext_output:
             self.write_csv_metadata(output_path)
-        elif 'xlsx' in ext_output:
+        elif "xlsx" in ext_output:
             self.write_excel_metadata(output_path)
-        elif 'json' in ext_output:
+        elif "json" in ext_output:
             self.write_json_metadata(output_path)
 
     def write_excel_metadata(self, output_path: str) -> None:
@@ -385,9 +385,9 @@ class MetaGen:
     def write_json_metadata(self, output_path: str) -> None:
         if output_path is None:
             output_path = self.output_path
-        metadata = self._compute_metadata().set_index('Name').T.to_dict()
-        json_to_dump = {'fields': metadata}
-        with open(output_path, 'w') as f:
+        metadata = self._compute_metadata().set_index("Name").T.to_dict()
+        json_to_dump = {"fields": metadata}
+        with open(output_path, "w") as f:
             json.dump(json_to_dump, f, indent=4, ensure_ascii=False)
 
     def write_parquet_metadata(self, output_path: str) -> None:
