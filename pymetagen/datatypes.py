@@ -9,7 +9,7 @@ from pymetagen.utils import EnumListMixin
 
 class MetaGenSupportedLoadingModes(EnumListMixin, str, Enum):
     LAZY = "lazy"
-    FULL = "full"
+    EAGER = "eager"
 
 
 class MetaGenSupportedFileExtensions(EnumListMixin, str, Enum):
