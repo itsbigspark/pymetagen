@@ -3,55 +3,11 @@ PyMetaGen
 =========
 
 Python Metadata Generator
-
-
-- Command Line Interface
-
-$ pymetagen -re --input (first argument) $(IN_FILE) \ --sheet-name 
- --output  (-o) $(OUT_METADATA) \
---regex Array(Field Names) --descriptions JSON_FILE | DATA_LIKE_FILE
-
-
-- Python Implementation
-
-Polars implementation
----------------------
-import os
-
-class MetaGen:
-    def __init__(
-        self,
-        input_data: DataFrameT,
-        output_path: str,
-        create_regex: bool | None = None,
-        descriptions: pl.LazyFrame | None  = None,
-    )
-
-    self.data = self.load_data(input_data)
-    self.output_path = output_path
-    self.create_regex = create_regex
-    self.descriptions = descriptions
-
-    def write_metadata(self) -> None:
-        basename, ext_output = tuple(
-            os.path.basename(self.output_file).split('.')
-        )
-        if 'csv' in ext_output:
-            self.write_csv_metadata()
-        elif 'xlsx' in ext_output:
-            self.write_excel_metadata()
-        elif 'json' in ext_output:
-            self.write_json_metadata()
-        elif ext_outpt == '.parquet':
-            self.write_parquet_metadata()
-    
-    def infer_datatypes(self):
-        pass
 """
 
 import json
-import os
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 import polars as pl
@@ -61,36 +17,78 @@ from pymetagen.datatypes import (
     MetaGenDataType,
     MetaGenSupportedFileExtensions,
     MetaGenSupportedLoadingModes,
+    dtype_to_metagentype,
 )
-from pymetagen.exceptions import LoadingModeUnsupportedError
+from pymetagen.exceptions import (
+    FileTypeUnsupportedError,
+    LoadingModeUnsupportedError,
+)
 from pymetagen.typing import DataFrameT
 
 
 class MetaGen:
+    """
+    Generate metadata for a Polars DataFrame.
+
+    Args:
+        data: Polars DataFrame to generate metadata for.
+        descriptions: A dictionary of column names, each containing a
+            dictionary with keys "description" and "long_name". e.g.
+                "column_name": {
+                    "description": "A description of the column",
+                    "long_name": "A long name for the column",
+                }
+    """
+
     def __init__(
         self,
         data: DataFrameT,
-        outpath: Path,
-        create_regex: bool | None = None,
-        descriptions: pl.LazyFrame | None = None,
+        descriptions: dict[str, dict[str, str]] | None = None,
     ):
         self.data = data
-        self.output_path = outpath
-        self.create_regex = create_regex
-        self.descriptions = descriptions
+        self.descriptions = descriptions or {}
 
     @classmethod
     def from_path(
         cls,
         path: Path,
-        outpath: Path,
-        create_regex: bool | None = None,
-        descriptions: pl.LazyFrame | None = None,
-        mode: MetaGenSupportedLoadingModes = MetaGenSupportedLoadingModes.LAZY,
-    ) -> DataFrameT:
+        descriptions_path: Path | None = None,
+        mode: MetaGenSupportedLoadingModes = MetaGenSupportedLoadingModes.EAGER,
+    ) -> "MetaGen":
+        """
+        Generate metadata from a file.
+
+        Args:
+            path: Path to the file to generate metadata from.
+            descriptions_path: Path to a JSON or CSV file containing descriptions.
+
+                In a JSON file the 'description' key will be read
+                and should contain a key for each column in the data. Each column key should contain a dictionary
+                with keys 'description' and 'long_name'. e.g.
+                    {
+                        "descriptions": {
+                            "column_1": {
+                                "description": "A description of the column",
+                                "long_name": "A long name for the column",
+                            },
+                            "column_2": {
+                                "description": "A description of the column",
+                                "long_name": "A long name for the column",
+                            },
+                        }
+                    }
+
+                In a CSV file, their should be three columns: 'column_name', 'description', and 'long_name'. e.g.
+                    column_name,description,long_name
+                    column_1,A description of the column,A long name for the column
+                    column_2,A description of the column,A long name for the column
+
+            mode: Loading mode to use. See :class:`pymetagen.datatypes.MetaGenSupportedLoadingModes` for supported
+                modes.
+        """
         mode_mapping = {
             MetaGenSupportedLoadingModes.LAZY: LazyDataLoader,
-            MetaGenSupportedLoadingModes.FULL: DataLoader,
+            MetaGenSupportedLoadingModes.EAGER: DataLoader,
         }
         try:
             LoaderClass = mode_mapping[mode]
@@ -101,22 +99,42 @@ class MetaGen:
             )
         data = LoaderClass(path)()
 
+        if descriptions_path is not None:
+            func_map = {
+                ".json": cls._load_descriptions_from_json,
+                ".csv": cls._load_descriptions_from_csv,
+            }
+            descriptions = func_map[descriptions_path.suffix](
+                descriptions_path
+            )
+        else:
+            descriptions = None
+
         return cls(
             data=data,
-            outpath=outpath,
-            create_regex=create_regex,
             descriptions=descriptions,
         )
 
-    def _compute_metadata(self) -> pd.DataFrame:
+    @staticmethod
+    def _load_descriptions_from_json(path: Path) -> dict[str, dict[str, str]]:
+        return json.loads(path.read_text())["descriptions"]
+
+    @staticmethod
+    def _load_descriptions_from_csv(path: Path) -> dict[str, dict[str, str]]:
+        return (
+            pd.read_csv(path).set_index("column_name").to_dict(orient="index")
+        )
+
+    def compute_metadata(self) -> pd.DataFrame:
         columns_to_drop = [
             "25%",
             "50%",
             "75%",
         ]
-        pymetage_columns = [
-            "Name",
+        pymetagen_columns = [
+            "Long Name",
             "Type",
+            "Description",
             "Min",
             "Max",
             "Min Length",
@@ -128,67 +146,97 @@ class MetaGen:
             "# unique",
             "Values",
         ]
-        metadata_table = self.get_simple_metadata(
+
+        assert_msg = (
+            "Internal error: while calculating '{}' metadata."
+            " Number of columns in metadata table does not match number of"
+            " columns in data."
+        )
+
+        metadata: dict[str, dict[str, Any]] = {}
+
+        simple_metadata = self._get_simple_metadata(
             columns_to_drop=columns_to_drop
         )
-        number_of_null_and_zeros = self.number_of_null_and_zeros()
-        number_of_positive_values = self.number_of_positive_values()
-        number_of_negative_values = self.number_of_negative_values()
-        minimal_string_length = self.minimal_string_length()
-        maximal_string_length = self.maximal_string_length()
-        number_of_unique_counts = self.number_of_unique_counts()
-        number_of_unique_values = self.number_of_unique_values()
+        for column, data in simple_metadata.items():
+            assert len(data) == len(self.data.columns), assert_msg.format(
+                column
+            )
+        metadata.update(simple_metadata)
 
-        metadata = (
-            metadata_table.merge(
-                number_of_null_and_zeros,
-                on="Name",
-                how="left",
-            )
-            .merge(
-                number_of_positive_values,
-                on="Name",
-                how="left",
-            )
-            .merge(
-                number_of_negative_values,
-                on="Name",
-                how="left",
-            )
-            .merge(
-                minimal_string_length,
-                on="Name",
-                how="left",
-            )
-            .merge(
-                maximal_string_length,
-                on="Name",
-                how="left",
-            )
-            .merge(
-                number_of_unique_counts,
-                on="Name",
-                how="left",
-            )
-            .merge(
-                number_of_unique_values,
-                on="Name",
-                how="left",
-            )
+        number_of_null_and_zeros = self._number_of_null_and_zeros(
+            metadata["Type"]
         )
-        return metadata[pymetage_columns]
+        assert len(number_of_null_and_zeros) == len(
+            self.data.columns
+        ), assert_msg.format("null and zeros")
+        metadata["# empty/zero"] = number_of_null_and_zeros
 
-    def get_simple_metadata(
+        number_of_positive_values = self._number_of_positive_values(
+            metadata["Type"]
+        )
+        assert len(number_of_positive_values) == len(
+            self.data.columns
+        ), assert_msg.format("positive values")
+        metadata["# positive"] = number_of_positive_values
+
+        number_of_negative_values = self._number_of_negative_values(
+            metadata["Type"]
+        )
+        assert len(number_of_negative_values) == len(
+            self.data.columns
+        ), assert_msg.format("negative values")
+        metadata["# negative"] = number_of_negative_values
+
+        minimal_string_length = self._minimal_string_length(metadata["Type"])
+        assert len(minimal_string_length) == len(
+            self.data.columns
+        ), assert_msg.format("minimal string length")
+        metadata["Min Length"] = minimal_string_length
+
+        maximal_string_length = self._maximal_string_length(metadata["Type"])
+        assert len(maximal_string_length) == len(
+            self.data.columns
+        ), assert_msg.format("maximal string length")
+        metadata["Max Length"] = maximal_string_length
+
+        number_of_unique_counts = self._number_of_unique_counts()
+        assert len(number_of_unique_counts) == len(
+            self.data.columns
+        ), assert_msg.format("number of unique counts")
+        metadata["# unique"] = number_of_unique_counts
+
+        number_of_unique_values = self._number_of_unique_values()
+        assert len(number_of_unique_values) == len(
+            self.data.columns
+        ), assert_msg.format("number of unique values")
+        metadata["Values"] = number_of_unique_values
+
+        metadata["Description"] = {}
+        metadata["Long Name"] = {}
+        for column in self.data.columns:
+            description_data = self.descriptions.get(column, {})
+            metadata["Description"][column] = description_data.get(
+                "description", ""
+            )
+            metadata["Long Name"][column] = description_data.get(
+                "long_name", ""
+            )
+
+        metadata: pd.DataFrame = pd.DataFrame(metadata)
+        metadata.index.name = "Name"
+
+        return metadata[pymetagen_columns]
+
+    def _get_simple_metadata(
         self, columns_to_drop: list[str] = None
-    ) -> pd.DataFrame:
+    ) -> dict[str, dict[str, Any]]:
         metadata_table = (
-            self.data.data.collect()
-            .describe()
+            self.data.describe()
             .to_pandas()
             .rename(columns={"describe": "Name"})
             .set_index("Name")
-            .T.iloc[:-1, :]
-            .drop(columns=columns_to_drop)
+            .T.drop(columns=columns_to_drop)
             .rename(
                 columns={
                     "null_count": "# nulls",
@@ -198,199 +246,162 @@ class MetaGen:
                     "std": "Std",
                 }
             )
+            .to_dict()
         )
 
-        types = pd.DataFrame(
-            list(
-                zip(
-                    self.data.data.columns,
-                    [
-                        MetaGenDataType.polars_to_metagen_type(_type).value
-                        for _type in self.data.data.dtypes
-                    ],
-                )
-            ),
-            columns=["Name", "Type"],
-        )
-        metadata_table = (
-            metadata_table.reset_index()
-            .rename(columns={"index": "Name"})
-            .merge(types, on="Name")
-        )
+        types_ = {}
+        for col, type_ in zip(self.data.columns, self.data.dtypes):
+            types_[col] = dtype_to_metagentype(type_)
+        metadata_table["Type"] = types_
+
         return metadata_table
 
-    def number_of_null_and_zeros(self) -> pd.DataFrame:
+    def _number_of_null_and_zeros(
+        self, types: dict[str, MetaGenDataType]
+    ) -> dict[str, int]:
         nulls = {}
-        for col in self.data.data.columns:
-            column_dtype = self.data.data.select(col).dtypes.pop().__name__
-            data = self.data.data.select(col).collect()
+        for col in self.data.columns:
+            data = self.data.select(col)
             null_count = data.null_count().row(0)[0]
             zero_count = (
                 data.filter(pl.col(col) == 0).shape[0]
-                if column_dtype in MetaGenDataType.numeric_data_types
+                if types[col] in MetaGenDataType.numeric_data_types
                 else 0
             )
             nulls[col] = zero_count + null_count
-        return (
-            pd.DataFrame([nulls])
-            .T.reset_index()
-            .rename(columns={"index": "Name", 0: "# empty/zero"})
-            .astype({"# empty/zero": "Int64"})
-        )
+        return nulls
 
-    def number_of_positive_values(self) -> pd.DataFrame:
+    def _number_of_positive_values(
+        self, types: dict[str, MetaGenDataType]
+    ) -> dict[str, int]:
         pos = {}
-        for col in self.data.data.columns:
-            column_dtype = self.data.data.select(col).dtypes.pop().__name__
+        for col in self.data.columns:
             pos_count = (
-                self.data.data.filter(pl.col(col) > 0).collect().shape[0]
-                if column_dtype in MetaGenDataType.numeric_data_types
+                self.data.filter(pl.col(col) > 0).shape[0]
+                if types[col] in MetaGenDataType.numeric_data_types
                 else None
             )
             pos[col] = pos_count
-        return (
-            pd.DataFrame([pos])
-            .T.reset_index()
-            .rename(columns={"index": "Name", 0: "# positive"})
-            .astype({"# positive": "Int64"})
-        )
+        return pos
 
-    def number_of_negative_values(self) -> pd.DataFrame:
+    def _number_of_negative_values(
+        self, types: dict[str, MetaGenDataType]
+    ) -> dict[str, int]:
         neg = {}
-        for col in self.data.data.columns:
-            column_dtype = self.data.data.select(col).dtypes.pop().__name__
+        for col in self.data.columns:
             neg_count = (
-                self.data.data.filter(pl.col(col) < 0).collect().shape[0]
-                if column_dtype in MetaGenDataType.numeric_data_types
+                self.data.filter(pl.col(col) < 0).shape[0]
+                if types[col] in MetaGenDataType.numeric_data_types
                 else None
             )
             neg[col] = neg_count
-        return (
-            pd.DataFrame([neg])
-            .T.reset_index()
-            .rename(columns={"index": "Name", 0: "# negative"})
-            .astype({"# negative": "Int64"})
-        )
+        return neg
 
-    def minimal_string_length(self) -> pd.DataFrame:
+    def _minimal_string_length(
+        self, types: dict[str, MetaGenDataType]
+    ) -> dict[str, int]:
         min_str_length = {}
-        for col in self.data.data.columns:
-            column_dtype = self.data.data.select(col).dtypes.pop().__name__
-            if column_dtype in MetaGenDataType.categorical_data_types:
+        for col in self.data.columns:
+            if types[col] in MetaGenDataType.categorical_data_types:
                 min_str_length[col] = (
-                    self.data.data.with_columns(
+                    self.data.with_columns(
                         pl.col(col).str.lengths().alias(f"{col}_len")
                     )
                     .select(f"{col}_len")
                     .min()
-                    .collect()
                     .row(0)[0]
                 )
             else:
                 min_str_length[col] = None
-        return (
-            pd.DataFrame([min_str_length])
-            .T.reset_index()
-            .rename(columns={"index": "Name", 0: "Min Length"})
-            .astype({"Min Length": "Int64"})
-        )
+        return min_str_length
 
-    def maximal_string_length(self) -> pd.DataFrame:
+    def _maximal_string_length(
+        self, types: dict[str, MetaGenDataType]
+    ) -> dict[str, int]:
         max_str_length = {}
-        for col in self.data.data.columns:
-            column_dtype = self.data.data.select(col).dtypes.pop().__name__
-            if column_dtype in MetaGenDataType.categorical_data_types:
+        for col in self.data.columns:
+            if types[col] in MetaGenDataType.categorical_data_types:
                 max_str_length[col] = (
-                    self.data.data.with_columns(
+                    self.data.with_columns(
                         pl.col(col).str.lengths().alias(f"{col}_len")
                     )
                     .select(f"{col}_len")
                     .max()
-                    .collect()
                     .row(0)[0]
                 )
             else:
                 max_str_length[col] = None
-        return (
-            pd.DataFrame([max_str_length])
-            .T.reset_index()
-            .rename(columns={"index": "Name", 0: "Max Length"})
-            .astype({"Max Length": "Int64"})
-        )
+        return max_str_length
 
-    def number_of_unique_counts(self) -> pd.DataFrame:
+    def _number_of_unique_counts(self) -> dict[str, int]:
         unique_counts = {}
-        for col in self.data.data.columns:
-            unique_counts[col] = (
-                self.data.data.select(col).collect().n_unique()
-            )
-        return (
-            pd.DataFrame([unique_counts])
-            .T.reset_index()
-            .rename(columns={"index": "Name", 0: "# unique"})
-            .astype({"# unique": "Int64"})
-        )
+        for col in self.data.columns:
+            unique_counts[col] = self.data.select(col).n_unique()
+        return unique_counts
 
-    def number_of_unique_values(
+    def _number_of_unique_values(
         self, max_number_of_unique_to_show: int = 7
-    ) -> pd.DataFrame:
+    ) -> dict[str, int]:
         unique_values = {}
-        for col in self.data.data.columns:
-            unique_values[col] = (
-                self.data.data.select(col).collect().unique()[col].to_list()
-            )
+        for col in self.data.columns:
+            unique_values[col] = self.data.select(col).unique()[col].to_list()
 
         unique_values = {
-            col: (
-                ", ".join(_list)
-                if len(_list) < max_number_of_unique_to_show
-                else None
-            )
+            col: _list if len(_list) < max_number_of_unique_to_show else None
             for col, _list in unique_values.items()
         }
-        return (
-            pd.DataFrame([unique_values])
-            .T.reset_index()
-            .rename(columns={"index": "Name", 0: "Values"})
-        )
+        return unique_values
 
-    def write_metadata(self, output_path: str | None = None) -> None:
-        if output_path is None:
-            output_path = self.output_path
-        basename, ext_output = tuple(os.path.basename(output_path).split("."))
-        if f".{ext_output}" not in MetaGenSupportedFileExtensions.list():
-            raise NotImplementedError(
-                f"File {ext_output} not yet implemented. Only supported file"
-                f" extensions: {MetaGenSupportedFileExtensions.list()}"
+    def write_metadata(self, outpath: str | Path) -> None:
+        """
+        Write metadata to a file.
+
+        Args:
+            outpath: Path to write metadata to. File extension determines
+                output format. Supported file extensions can be found in
+                :class:`pymetagen.datatypes.MetaGenSupportedFileExtensions`.
+        """
+        outpath = Path(outpath)
+
+        output_type_mapping = {
+            ".csv": self._write_csv_metadata,
+            ".xlsx": self._write_excel_metadata,
+            ".json": self._write_json_metadata,
+            ".parquet": self.write_parquet_metadata,
+        }
+
+        try:
+            write_metadata = output_type_mapping[outpath.suffix]
+        except KeyError:
+            raise FileTypeUnsupportedError(
+                f"File type {outpath.suffix} not yet implemented. Only"
+                " supported file extensions:"
+                f" {MetaGenSupportedFileExtensions.list()}"
             )
-        if "csv" in ext_output:
-            self.write_csv_metadata(output_path)
-        elif "xlsx" in ext_output:
-            self.write_excel_metadata(output_path)
-        elif "json" in ext_output:
-            self.write_json_metadata(output_path)
+        write_metadata(outpath)
 
-    def write_excel_metadata(self, output_path: str) -> None:
-        if output_path is None:
-            output_path = self.output_path
-        metadata = self._compute_metadata()
-        metadata.to_excel(output_path, index=False)
+    def _write_excel_metadata(self, output_path: str) -> None:
+        metadata = self.compute_metadata()
+        metadata.to_excel(output_path)
 
-    def write_csv_metadata(self, output_path: str) -> None:
-        if output_path is None:
-            output_path = self.output_path
-        metadata = self._compute_metadata()
-        metadata.to_csv(output_path, index=False)
+    def _write_csv_metadata(self, output_path: str) -> None:
+        metadata = self.compute_metadata()
+        metadata.to_csv(output_path)
 
-    def write_json_metadata(self, output_path: str) -> None:
-        if output_path is None:
-            output_path = self.output_path
-        metadata = self._compute_metadata().set_index("Name").T.to_dict()
+    def _write_json_metadata(self, output_path: str) -> None:
+        metadata = self.compute_metadata().to_dict(orient="index")
         json_to_dump = {"fields": metadata}
         with open(output_path, "w") as f:
             json.dump(json_to_dump, f, indent=4, ensure_ascii=False)
 
     def write_parquet_metadata(self, output_path: str) -> None:
         # NOTE: @vdiaz having problems due to type mixing in Min Max columns
-        metadata = self._compute_metadata()
+        metadata = self.compute_metadata()
         metadata.to_parquet(output_path)
+
+
+def json_metadata_to_pandas(path: Path) -> pd.DataFrame:
+    with path.open() as f:
+        metadata = json.load(f)
+    metadata = metadata["fields"]
+    return pd.DataFrame.from_dict(metadata, orient="index")

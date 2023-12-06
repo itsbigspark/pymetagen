@@ -1,36 +1,6 @@
 """
 Data Loader
 ===========
-polars_default_read_csv_options
-{
-    has_header: bool = True,
-    columns: Sequence[int] | Sequence[str] | None = None,
-    new_columns: Sequence[str] | None = None,
-    separator: str = ",",
-    comment_char: str | None = None,
-    quote_char: str | None = r'"',
-    skip_rows: int = 0,
-    dtypes: Mapping[str, PolarsDataType] | Sequence[PolarsDataType] | None = None,
-    null_values: str | Sequence[str] | dict[str, str] | None = None,
-    missing_utf8_is_empty_string: bool = False,
-    ignore_errors: bool = False,
-    try_parse_dates: bool = False,
-    n_threads: int | None = None,
-    infer_schema_length: int | None = N_INFER_DEFAULT,
-    batch_size: int = 8192,
-    n_rows: int | None = None,
-    encoding: CsvEncoding | str = "utf8",
-    low_memory: bool = False,
-    rechunk: bool = True,
-    use_pyarrow: bool = False,
-    storage_options: dict[str, Any] | None = None,
-    skip_rows_after_header: int = 0,
-    row_count_name: str | None = None,
-    row_count_offset: int = 0,
-    sample_size: int = 1024,
-    eol_char: str = "\n",
-    raise_if_empty: bool = True,
-}
 """
 
 import os
@@ -40,37 +10,10 @@ from typing import Any
 
 import polars as pl
 from polars.datatypes.constants import N_INFER_DEFAULT
-from polars.type_aliases import ParallelStrategy
 
 from pymetagen.datatypes import MetaGenSupportedFileExtensions
 from pymetagen.exceptions import FileTypeUnsupportedError
 from pymetagen.utils import selectively_update_dict
-
-
-class BaseLoadingOptions:
-    def __init__(self) -> None:
-        self.columns: list[int] | list[str] | None = None
-        self.use_pyarrow: bool = False
-        self.n_rows: int | None = (None,)
-        self.row_count_name: str | None = None
-        self.row_count_offset: int = 0
-        self.low_memory: bool = False
-        self.rechunk: bool = True
-
-    def parquet_full_loading_options(
-        self,
-        memory_map: bool,
-        storage_options: dict[str, Any] | None,
-        parallel: ParallelStrategy,
-        pyarrow_options: dict[str, Any] | None,
-        use_statistics: bool,
-    ) -> dict[str, Any]:
-        self.memory_map: memory_map
-        self.storage_options: storage_options
-        self.parallel = parallel
-        self.pyarrow_options = pyarrow_options
-        self.use_statistics = use_statistics
-
 
 POLARS_DEFAULT_READ_CSV_OPTIONS: dict[str, Any] = {
     "columns": None,
@@ -83,7 +26,7 @@ POLARS_DEFAULT_READ_CSV_OPTIONS: dict[str, Any] = {
     "has_header": True,
     "new_columns": None,
     "separator": ",",
-    "comment_char": None,
+    "comment_prefix": None,
     "quote_char": r'"',
     "skip_rows": 0,
     "dtypes": None,
@@ -163,6 +106,7 @@ class DataLoader:
         self.polars_read_csv_options = _default_read_csv_options.copy()
         self._update_read_csv_polars_options(polars_read_csv_options)
         self.polars_read_excel_options = _default_read_excel_options.copy()
+        self._update_polars_read_excel_options(sheet_name)
         self.polars_read_parquet_options = _default_read_parquet_options.copy()
 
     def __call__(self):

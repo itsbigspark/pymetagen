@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 from enum import Enum
-
-import polars as pl
+from typing import Any
 
 from pymetagen.utils import EnumListMixin
 
 
 class MetaGenSupportedLoadingModes(EnumListMixin, str, Enum):
     LAZY = "lazy"
-    FULL = "full"
+    EAGER = "eager"
 
 
 class MetaGenSupportedFileExtensions(EnumListMixin, str, Enum):
@@ -88,80 +87,21 @@ class MetaGenDataType(str, Enum):
         Utf8,
     ]
 
-    @classmethod
-    def polars_datatypes(cls) -> list[MetaGenDataType]:
-        return [
-            item
-            for item in list(map(lambda c: c, MetaGenDataType))
-            if not item.islower()
-        ]
 
-    @classmethod
-    def polars_to_metagen_type(
-        cls, polars_data_type: pl.DataType
-    ) -> MetaGenDataType:
-        if type(polars_data_type) != type(pl.DataType):  # noqa: E721
-            raise TypeError(f"{polars_data_type} is not a polars.DataType")
+def dtype_to_metagentype(dtype: Any):
+    dtype: str = str(dtype)
 
-        _type = polars_data_type.base_type().__name__
-        if _type not in cls.polars_datatypes():
-            raise NotImplementedError(
-                f"Polar data type {_type} not yet implemented"
-            )
+    starts_with_map = {
+        "Utf": MetaGenDataType.string,
+        "Float": MetaGenDataType.float,
+        "Int": MetaGenDataType.integer,
+        "UInt": MetaGenDataType.integer,
+        "Datetime": MetaGenDataType.datetime,
+        "Date": MetaGenDataType.date,
+    }
 
-        if _type in FloatTypes:
-            return cls.float
-        if _type in IntegerTypes:
-            return cls.integer
-        if _type in DateTypes:
-            return cls.date
-        if _type == cls.Utf8:
-            return cls.string
-        if _type == cls.Categorical:
-            return cls.category
-        if _type == cls.Datetime:
-            return cls.datetime
-        if _type == cls.Null:
-            return cls.null
-        if _type == cls.Boolean:
-            return cls.bool
-        if _type == cls.Binary:
-            return cls.binary
-        if _type == cls.Unknown:
-            return cls.unknown
-        if _type == cls.Struct:
-            return cls.dict
-        if _type == cls.List:
-            return cls.list
-        if _type == cls.Array:
-            return cls.array
-        if _type == cls.Object:
-            return cls.object
+    for key, value in starts_with_map.items():
+        if dtype.startswith(key):
+            return value
 
-    @classmethod
-    def readable_data_type(cls, polars_data_type: pl.DataType) -> str:
-        return cls.polars_to_metagen_type(polars_data_type).value
-
-
-FloatTypes = [
-    MetaGenDataType.Decimal,
-    MetaGenDataType.Float32,
-    MetaGenDataType.Float64,
-]
-
-IntegerTypes = [
-    MetaGenDataType.Int8,
-    MetaGenDataType.Int16,
-    MetaGenDataType.Int32,
-    MetaGenDataType.Int64,
-    MetaGenDataType.UInt8,
-    MetaGenDataType.UInt16,
-    MetaGenDataType.UInt32,
-    MetaGenDataType.UInt64,
-]
-
-DateTypes = [
-    MetaGenDataType.Date,
-    MetaGenDataType.Duration,
-    MetaGenDataType.Time,
-]
+    raise ValueError(f"Unknown dtype: {dtype}")

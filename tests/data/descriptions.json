@@ -1,0 +1,16 @@
+{
+    "descriptions": {
+        "a": {
+            "description": "The field labelled a",
+            "long_name": "aaaaaaaaaaaaaaa"
+        },
+        "b": {
+            "description": "The field labelled b",
+            "long_name": "bbbbbb"
+        },
+        "c": {
+            "description": "The field labelled c",
+            "long_name": "ccccccccccccccccccccc"
+        }
+    }
+}
