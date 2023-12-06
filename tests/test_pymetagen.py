@@ -60,8 +60,13 @@ class TestMetaGen:
     @pytest.mark.parametrize(
         "extension, read_metadata",
         [
-            ["csv", pd.read_csv],
-            ["xlsx", lambda x: pd.read_excel(x, engine="openpyxl")],
+            ["csv", lambda x: pd.read_csv(x).set_index("Name")],
+            [
+                "xlsx",
+                lambda x: pd.read_excel(x, engine="openpyxl").set_index(
+                    "Name"
+                ),
+            ],
             ["json", json_metadata_to_pandas],
             ["parquet", pd.read_parquet],
         ],
