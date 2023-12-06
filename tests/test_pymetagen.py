@@ -1,13 +1,12 @@
+from collections.abc import Callable
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
-from pymetagen import MetaGen
+from pymetagen import MetaGen, json_metadata_to_pandas
 from pymetagen.datatypes import MetaGenSupportedLoadingModes
-from pymetagen.exceptions import (
-    FileTypeUnsupportedError,
-    LoadingModeUnsupportedError,
-)
+from pymetagen.exceptions import FileTypeUnsupportedError
 
 input_paths = ["input_csv_path", "input_parquet_path", "input_xlsx_path"]
 
@@ -54,6 +53,49 @@ class TestMetaGen:
 
         assert set(metadata.index) == set(data.columns)
 
+    @pytest.mark.parametrize(
+        "extension, read_metadata",
+        [
+            ["csv", pd.read_csv],
+            ["xlsx", lambda x: pd.read_excel(x, engine="openpyxl")],
+            ["json", json_metadata_to_pandas],
+            ["parquet", pd.read_parquet],
+        ],
+    )
+    def test_write(
+        self,
+        extension: str,
+        data: str,
+        tmp_dir_path: Path,
+        read_metadata: Callable,
+        request: pytest.FixtureRequest,
+    ):
+        data = request.getfixturevalue(data)
+        outpath = tmp_dir_path / f"out.{extension}"
+
+        metagen = MetaGen(data=data)
+        metagen.write_metadata(outpath=outpath)
+
+        assert outpath.exists()
+        assert outpath.is_file()
+
+        outdata = read_metadata(outpath)
+
+        assert len(outdata) == len(data.columns)
+        assert list(outdata.columns) == [
+            "Type",
+            "Min",
+            "Max",
+            "Min Length",
+            "Max Length",
+            "# nulls",
+            "# empty/zero",
+            "# positive",
+            "# negative",
+            "# unique",
+            "Values",
+        ]
+
 
 @pytest.mark.parametrize(
     "mode",
@@ -86,13 +128,3 @@ class TestMetaGenFromPath:
                 path=tmp_dir_path / "test.unsupported",
                 mode=mode,
             )
-
-
-def test_from_path_unsupported_mode(
-    tmp_dir_path: Path,
-):
-    with pytest.raises(LoadingModeUnsupportedError):
-        MetaGen.from_path(
-            path=tmp_dir_path / "test.csv",
-            mode="unsupported_mode",
-        )

@@ -132,7 +132,7 @@ class MetaGen:
 
         metadata: dict[str, dict[str, Any]] = {}
 
-        simple_metadata = self.get_simple_metadata(
+        simple_metadata = self._get_simple_metadata(
             columns_to_drop=columns_to_drop
         )
         for column, data in simple_metadata.items():
@@ -141,43 +141,43 @@ class MetaGen:
             )
         metadata.update(simple_metadata)
 
-        number_of_null_and_zeros = self.number_of_null_and_zeros()
+        number_of_null_and_zeros = self._number_of_null_and_zeros()
         assert len(number_of_null_and_zeros) == len(
             self.data.columns
         ), assert_msg.format("null and zeros")
         metadata["# empty/zero"] = number_of_null_and_zeros
 
-        number_of_positive_values = self.number_of_positive_values()
+        number_of_positive_values = self._number_of_positive_values()
         assert len(number_of_positive_values) == len(
             self.data.columns
         ), assert_msg.format("positive values")
         metadata["# positive"] = number_of_positive_values
 
-        number_of_negative_values = self.number_of_negative_values()
+        number_of_negative_values = self._number_of_negative_values()
         assert len(number_of_negative_values) == len(
             self.data.columns
         ), assert_msg.format("negative values")
         metadata["# negative"] = number_of_negative_values
 
-        minimal_string_length = self.minimal_string_length()
+        minimal_string_length = self._minimal_string_length()
         assert len(minimal_string_length) == len(
             self.data.columns
         ), assert_msg.format("minimal string length")
         metadata["Min Length"] = minimal_string_length
 
-        maximal_string_length = self.maximal_string_length()
+        maximal_string_length = self._maximal_string_length()
         assert len(maximal_string_length) == len(
             self.data.columns
         ), assert_msg.format("maximal string length")
         metadata["Max Length"] = maximal_string_length
 
-        number_of_unique_counts = self.number_of_unique_counts()
+        number_of_unique_counts = self._number_of_unique_counts()
         assert len(number_of_unique_counts) == len(
             self.data.columns
         ), assert_msg.format("number of unique counts")
         metadata["# unique"] = number_of_unique_counts
 
-        number_of_unique_values = self.number_of_unique_values()
+        number_of_unique_values = self._number_of_unique_values()
         assert len(number_of_unique_values) == len(
             self.data.columns
         ), assert_msg.format("number of unique values")
@@ -188,7 +188,7 @@ class MetaGen:
 
         return metadata[pymetagen_columns]
 
-    def get_simple_metadata(
+    def _get_simple_metadata(
         self, columns_to_drop: list[str] = None
     ) -> dict[str, dict[str, Any]]:
         metadata_table = (
@@ -220,7 +220,7 @@ class MetaGen:
         )
         return metadata_table
 
-    def number_of_null_and_zeros(self) -> dict[str, int]:
+    def _number_of_null_and_zeros(self) -> dict[str, int]:
         nulls = {}
         for col in self.data.columns:
             column_dtype = self.data.select(col).dtypes.pop().__name__
@@ -234,7 +234,7 @@ class MetaGen:
             nulls[col] = zero_count + null_count
         return nulls
 
-    def number_of_positive_values(self) -> dict[str, int]:
+    def _number_of_positive_values(self) -> dict[str, int]:
         pos = {}
         for col in self.data.columns:
             column_dtype = self.data.select(col).dtypes.pop().__name__
@@ -246,7 +246,7 @@ class MetaGen:
             pos[col] = pos_count
         return pos
 
-    def number_of_negative_values(self) -> dict[str, int]:
+    def _number_of_negative_values(self) -> dict[str, int]:
         neg = {}
         for col in self.data.columns:
             column_dtype = self.data.select(col).dtypes.pop().__name__
@@ -258,7 +258,7 @@ class MetaGen:
             neg[col] = neg_count
         return neg
 
-    def minimal_string_length(self) -> dict[str, int]:
+    def _minimal_string_length(self) -> dict[str, int]:
         min_str_length = {}
         for col in self.data.columns:
             column_dtype = self.data.select(col).dtypes.pop().__name__
@@ -275,7 +275,7 @@ class MetaGen:
                 min_str_length[col] = None
         return min_str_length
 
-    def maximal_string_length(self) -> dict[str, int]:
+    def _maximal_string_length(self) -> dict[str, int]:
         max_str_length = {}
         for col in self.data.columns:
             column_dtype = self.data.select(col).dtypes.pop().__name__
@@ -292,13 +292,13 @@ class MetaGen:
                 max_str_length[col] = None
         return max_str_length
 
-    def number_of_unique_counts(self) -> dict[str, int]:
+    def _number_of_unique_counts(self) -> dict[str, int]:
         unique_counts = {}
         for col in self.data.columns:
             unique_counts[col] = self.data.select(col).n_unique()
         return unique_counts
 
-    def number_of_unique_values(
+    def _number_of_unique_values(
         self, max_number_of_unique_to_show: int = 7
     ) -> dict[str, int]:
         unique_values = {}
@@ -311,8 +311,8 @@ class MetaGen:
         }
         return unique_values
 
-    def write_metadata(self, output_path: str | Path) -> None:
-        output_path = Path(output_path)
+    def write_metadata(self, outpath: str | Path) -> None:
+        outpath = Path(outpath)
 
         output_type_mapping = {
             ".csv": self._write_csv_metadata,
@@ -322,14 +322,14 @@ class MetaGen:
         }
 
         try:
-            write_metadata = output_type_mapping[output_path.suffix]
+            write_metadata = output_type_mapping[outpath.suffix]
         except KeyError:
             raise NotImplementedError(
-                f"File type {output_path.suffix} not yet implemented. Only"
+                f"File type {outpath.suffix} not yet implemented. Only"
                 " supported file extensions:"
                 f" {MetaGenSupportedFileExtensions.list()}"
             )
-        write_metadata(output_path)
+        write_metadata(outpath)
 
     def _write_excel_metadata(self, output_path: str) -> None:
         metadata = self.compute_metadata()
@@ -340,7 +340,7 @@ class MetaGen:
         metadata.to_csv(output_path, index=False)
 
     def _write_json_metadata(self, output_path: str) -> None:
-        metadata = self.compute_metadata().set_index("Name").T.to_dict()
+        metadata = self.compute_metadata().to_dict()
         json_to_dump = {"fields": metadata}
         with open(output_path, "w") as f:
             json.dump(json_to_dump, f, indent=4, ensure_ascii=False)
@@ -349,3 +349,10 @@ class MetaGen:
         # NOTE: @vdiaz having problems due to type mixing in Min Max columns
         metadata = self.compute_metadata()
         metadata.to_parquet(output_path)
+
+
+def json_metadata_to_pandas(path: Path) -> pd.DataFrame:
+    with path.open() as f:
+        metadata = json.load(f)
+    metadata = metadata["fields"]
+    return pd.DataFrame(metadata)
