@@ -2,6 +2,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pandas as pd
+import polars as pl
 import pytest
 
 from pymetagen import MetaGen, json_metadata_to_pandas
@@ -141,3 +142,11 @@ def test_from_path_unsupported_mode(
             path=tmp_dir_path / "test.csv",
             mode="unsupported_mode",
         )
+
+
+def test_write_metadata_unsupported_extension(
+    tmp_dir_path: Path, eager_data: pl.DataFrame
+):
+    metagen = MetaGen(data=pd.DataFrame)
+    with pytest.raises(FileTypeUnsupportedError):
+        metagen.write_metadata(tmp_dir_path / "test.unsupported")

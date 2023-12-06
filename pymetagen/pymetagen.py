@@ -62,7 +62,10 @@ from pymetagen.datatypes import (
     MetaGenSupportedFileExtensions,
     MetaGenSupportedLoadingModes,
 )
-from pymetagen.exceptions import LoadingModeUnsupportedError
+from pymetagen.exceptions import (
+    FileTypeUnsupportedError,
+    LoadingModeUnsupportedError,
+)
 from pymetagen.typing import DataFrameT
 
 
@@ -324,7 +327,7 @@ class MetaGen:
         try:
             write_metadata = output_type_mapping[outpath.suffix]
         except KeyError:
-            raise NotImplementedError(
+            raise FileTypeUnsupportedError(
                 f"File type {outpath.suffix} not yet implemented. Only"
                 " supported file extensions:"
                 f" {MetaGenSupportedFileExtensions.list()}"
