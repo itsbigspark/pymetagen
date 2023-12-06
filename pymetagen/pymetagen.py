@@ -27,6 +27,19 @@ from pymetagen.typing import DataFrameT
 
 
 class MetaGen:
+    """
+    Generate metadata for a Polars DataFrame.
+
+    Args:
+        data: Polars DataFrame to generate metadata for.
+        descriptions: A dictionary of column names, each containing a
+            dictionary with keys "description" and "long_name". e.g.
+                "column_name": {
+                    "description": "A description of the column",
+                    "long_name": "A long name for the column",
+                }
+    """
+
     def __init__(
         self,
         data: DataFrameT,
@@ -42,6 +55,29 @@ class MetaGen:
         descriptions_path: Path | None = None,
         mode: MetaGenSupportedLoadingModes = MetaGenSupportedLoadingModes.EAGER,
     ) -> "MetaGen":
+        """
+        Generate metadata from a file.
+
+        Args:
+            path: Path to the file to generate metadata from.
+            descriptions_path: Path to a JSON file containing descriptions. The 'description' key will be read
+                and should contain a key for each column in the data. Each column key should contain a dictionary
+                with keys 'description' and 'long_name'. e.g.
+                {
+                    "descriptions": {
+                        "column_1": {
+                            "description": "A description of the column",
+                            "long_name": "A long name for the column",
+                        },
+                        "column_2": {
+                            "description": "A description of the column",
+                            "long_name": "A long name for the column",
+                        },
+                    }
+                }
+            mode: Loading mode to use. See :class:`pymetagen.datatypes.MetaGenSupportedLoadingModes` for supported
+                modes.
+        """
         mode_mapping = {
             MetaGenSupportedLoadingModes.LAZY: LazyDataLoader,
             MetaGenSupportedLoadingModes.EAGER: DataLoader,
@@ -295,6 +331,14 @@ class MetaGen:
         return unique_values
 
     def write_metadata(self, outpath: str | Path) -> None:
+        """
+        Write metadata to a file.
+
+        Args:
+            outpath: Path to write metadata to. File extension determines
+                output format. Supported file extensions can be found in
+                :class:`pymetagen.datatypes.MetaGenSupportedFileExtensions`.
+        """
         outpath = Path(outpath)
 
         output_type_mapping = {
