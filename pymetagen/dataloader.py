@@ -40,37 +40,10 @@ from typing import Any
 
 import polars as pl
 from polars.datatypes.constants import N_INFER_DEFAULT
-from polars.type_aliases import ParallelStrategy
 
 from pymetagen.datatypes import MetaGenSupportedFileExtensions
 from pymetagen.exceptions import FileTypeUnsupportedError
 from pymetagen.utils import selectively_update_dict
-
-
-class BaseLoadingOptions:
-    def __init__(self) -> None:
-        self.columns: list[int] | list[str] | None = None
-        self.use_pyarrow: bool = False
-        self.n_rows: int | None = (None,)
-        self.row_count_name: str | None = None
-        self.row_count_offset: int = 0
-        self.low_memory: bool = False
-        self.rechunk: bool = True
-
-    def parquet_full_loading_options(
-        self,
-        memory_map: bool,
-        storage_options: dict[str, Any] | None,
-        parallel: ParallelStrategy,
-        pyarrow_options: dict[str, Any] | None,
-        use_statistics: bool,
-    ) -> dict[str, Any]:
-        self.memory_map: memory_map
-        self.storage_options: storage_options
-        self.parallel = parallel
-        self.pyarrow_options = pyarrow_options
-        self.use_statistics = use_statistics
-
 
 POLARS_DEFAULT_READ_CSV_OPTIONS: dict[str, Any] = {
     "columns": None,
@@ -163,6 +136,7 @@ class DataLoader:
         self.polars_read_csv_options = _default_read_csv_options.copy()
         self._update_read_csv_polars_options(polars_read_csv_options)
         self.polars_read_excel_options = _default_read_excel_options.copy()
+        self._update_polars_read_excel_options(sheet_name)
         self.polars_read_parquet_options = _default_read_parquet_options.copy()
 
     def __call__(self):
