@@ -61,6 +61,7 @@ from pymetagen.datatypes import (
     MetaGenDataType,
     MetaGenSupportedFileExtensions,
     MetaGenSupportedLoadingModes,
+    dtype_to_metagentype,
 )
 from pymetagen.exceptions import (
     FileTypeUnsupportedError,
@@ -87,7 +88,7 @@ class MetaGen:
         create_regex: bool | None = None,
         descriptions: pl.LazyFrame | None = None,
         mode: MetaGenSupportedLoadingModes = MetaGenSupportedLoadingModes.EAGER,
-    ) -> DataFrameT:
+    ) -> "MetaGen":
         mode_mapping = {
             MetaGenSupportedLoadingModes.LAZY: LazyDataLoader,
             MetaGenSupportedLoadingModes.EAGER: DataLoader,
@@ -144,31 +145,37 @@ class MetaGen:
             )
         metadata.update(simple_metadata)
 
-        number_of_null_and_zeros = self._number_of_null_and_zeros()
+        number_of_null_and_zeros = self._number_of_null_and_zeros(
+            metadata["Type"]
+        )
         assert len(number_of_null_and_zeros) == len(
             self.data.columns
         ), assert_msg.format("null and zeros")
         metadata["# empty/zero"] = number_of_null_and_zeros
 
-        number_of_positive_values = self._number_of_positive_values()
+        number_of_positive_values = self._number_of_positive_values(
+            metadata["Type"]
+        )
         assert len(number_of_positive_values) == len(
             self.data.columns
         ), assert_msg.format("positive values")
         metadata["# positive"] = number_of_positive_values
 
-        number_of_negative_values = self._number_of_negative_values()
+        number_of_negative_values = self._number_of_negative_values(
+            metadata["Type"]
+        )
         assert len(number_of_negative_values) == len(
             self.data.columns
         ), assert_msg.format("negative values")
         metadata["# negative"] = number_of_negative_values
 
-        minimal_string_length = self._minimal_string_length()
+        minimal_string_length = self._minimal_string_length(metadata["Type"])
         assert len(minimal_string_length) == len(
             self.data.columns
         ), assert_msg.format("minimal string length")
         metadata["Min Length"] = minimal_string_length
 
-        maximal_string_length = self._maximal_string_length()
+        maximal_string_length = self._maximal_string_length(metadata["Type"])
         assert len(maximal_string_length) == len(
             self.data.columns
         ), assert_msg.format("maximal string length")
@@ -212,60 +219,60 @@ class MetaGen:
             .to_dict()
         )
 
-        metadata_table["Type"] = dict(
-            zip(
-                self.data.columns,
-                [
-                    MetaGenDataType.polars_to_metagen_type(_type).value
-                    for _type in self.data.dtypes
-                ],
-            )
-        )
+        types_ = {}
+        for col, type_ in zip(self.data.columns, self.data.dtypes):
+            types_[col] = dtype_to_metagentype(type_)
+        metadata_table["Type"] = types_
+
         return metadata_table
 
-    def _number_of_null_and_zeros(self) -> dict[str, int]:
+    def _number_of_null_and_zeros(
+        self, types: dict[str, MetaGenDataType]
+    ) -> dict[str, int]:
         nulls = {}
         for col in self.data.columns:
-            column_dtype = self.data.select(col).dtypes.pop().__name__
             data = self.data.select(col)
             null_count = data.null_count().row(0)[0]
             zero_count = (
                 data.filter(pl.col(col) == 0).shape[0]
-                if column_dtype in MetaGenDataType.numeric_data_types
+                if types[col] in MetaGenDataType.numeric_data_types
                 else 0
             )
             nulls[col] = zero_count + null_count
         return nulls
 
-    def _number_of_positive_values(self) -> dict[str, int]:
+    def _number_of_positive_values(
+        self, types: dict[str, MetaGenDataType]
+    ) -> dict[str, int]:
         pos = {}
         for col in self.data.columns:
-            column_dtype = self.data.select(col).dtypes.pop().__name__
             pos_count = (
                 self.data.filter(pl.col(col) > 0).shape[0]
-                if column_dtype in MetaGenDataType.numeric_data_types
+                if types[col] in MetaGenDataType.numeric_data_types
                 else None
             )
             pos[col] = pos_count
         return pos
 
-    def _number_of_negative_values(self) -> dict[str, int]:
+    def _number_of_negative_values(
+        self, types: dict[str, MetaGenDataType]
+    ) -> dict[str, int]:
         neg = {}
         for col in self.data.columns:
-            column_dtype = self.data.select(col).dtypes.pop().__name__
             neg_count = (
                 self.data.filter(pl.col(col) < 0).shape[0]
-                if column_dtype in MetaGenDataType.numeric_data_types
+                if types[col] in MetaGenDataType.numeric_data_types
                 else None
             )
             neg[col] = neg_count
         return neg
 
-    def _minimal_string_length(self) -> dict[str, int]:
+    def _minimal_string_length(
+        self, types: dict[str, MetaGenDataType]
+    ) -> dict[str, int]:
         min_str_length = {}
         for col in self.data.columns:
-            column_dtype = self.data.select(col).dtypes.pop().__name__
-            if column_dtype in MetaGenDataType.categorical_data_types:
+            if types[col] in MetaGenDataType.categorical_data_types:
                 min_str_length[col] = (
                     self.data.with_columns(
                         pl.col(col).str.lengths().alias(f"{col}_len")
@@ -278,11 +285,12 @@ class MetaGen:
                 min_str_length[col] = None
         return min_str_length
 
-    def _maximal_string_length(self) -> dict[str, int]:
+    def _maximal_string_length(
+        self, types: dict[str, MetaGenDataType]
+    ) -> dict[str, int]:
         max_str_length = {}
         for col in self.data.columns:
-            column_dtype = self.data.select(col).dtypes.pop().__name__
-            if column_dtype in MetaGenDataType.categorical_data_types:
+            if types[col] in MetaGenDataType.categorical_data_types:
                 max_str_length[col] = (
                     self.data.with_columns(
                         pl.col(col).str.lengths().alias(f"{col}_len")
