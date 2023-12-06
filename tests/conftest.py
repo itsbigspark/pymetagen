@@ -42,3 +42,13 @@ def input_xlsx_path(eager_data: pl.DataFrame) -> Path:
     path = Path("tests/data/input.xlsx")
     eager_data.write_excel(path)
     return path
+
+
+@pytest.fixture
+def descriptions_csv_path() -> Path:
+    return Path("tests/data/descriptions.csv")
+
+
+@pytest.fixture
+def descriptions_json_path() -> Path:
+    return Path("tests/data/descriptions.json")

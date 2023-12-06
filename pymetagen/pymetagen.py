@@ -43,7 +43,7 @@ class MetaGen:
     def __init__(
         self,
         data: DataFrameT,
-        descriptions: dict[str, str] | None = None,
+        descriptions: dict[str, dict[str, str]] | None = None,
     ):
         self.data = data
         self.descriptions = descriptions or {}
@@ -60,21 +60,29 @@ class MetaGen:
 
         Args:
             path: Path to the file to generate metadata from.
-            descriptions_path: Path to a JSON file containing descriptions. The 'description' key will be read
+            descriptions_path: Path to a JSON or CSV file containing descriptions.
+
+                In a JSON file the 'description' key will be read
                 and should contain a key for each column in the data. Each column key should contain a dictionary
                 with keys 'description' and 'long_name'. e.g.
-                {
-                    "descriptions": {
-                        "column_1": {
-                            "description": "A description of the column",
-                            "long_name": "A long name for the column",
-                        },
-                        "column_2": {
-                            "description": "A description of the column",
-                            "long_name": "A long name for the column",
-                        },
+                    {
+                        "descriptions": {
+                            "column_1": {
+                                "description": "A description of the column",
+                                "long_name": "A long name for the column",
+                            },
+                            "column_2": {
+                                "description": "A description of the column",
+                                "long_name": "A long name for the column",
+                            },
+                        }
                     }
-                }
+
+                In a CSV file, their should be three columns: 'column_name', 'description', and 'long_name'. e.g.
+                    column_name,description,long_name
+                    column_1,A description of the column,A long name for the column
+                    column_2,A description of the column,A long name for the column
+
             mode: Loading mode to use. See :class:`pymetagen.datatypes.MetaGenSupportedLoadingModes` for supported
                 modes.
         """
@@ -92,15 +100,29 @@ class MetaGen:
         data = LoaderClass(path)()
 
         if descriptions_path is not None:
-            descriptions = json.loads(descriptions_path.read_text())[
-                "descriptions"
-            ]
+            func_map = {
+                ".json": cls._load_descriptions_from_json,
+                ".csv": cls._load_descriptions_from_csv,
+            }
+            descriptions = func_map[descriptions_path.suffix](
+                descriptions_path
+            )
         else:
             descriptions = None
 
         return cls(
             data=data,
             descriptions=descriptions,
+        )
+
+    @staticmethod
+    def _load_descriptions_from_json(path: Path) -> dict[str, dict[str, str]]:
+        return json.loads(path.read_text())["descriptions"]
+
+    @staticmethod
+    def _load_descriptions_from_csv(path: Path) -> dict[str, dict[str, str]]:
+        return (
+            pd.read_csv(path).set_index("column_name").to_dict(orient="index")
         )
 
     def compute_metadata(self) -> pd.DataFrame:

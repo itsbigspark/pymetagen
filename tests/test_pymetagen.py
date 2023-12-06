@@ -140,6 +140,35 @@ class TestMetaGenFromPath:
                 mode=mode,
             )
 
+    @pytest.mark.parametrize(
+        "descriptions_path",
+        [
+            "descriptions_csv_path",
+            "descriptions_json_path",
+        ],
+    )
+    def test_with_descriptions(
+        self,
+        descriptions_path: str,
+        request: pytest.FixtureRequest,
+        input_csv_path: Path,
+        mode: MetaGenSupportedLoadingModes,
+    ):
+        if mode == MetaGenSupportedLoadingModes.LAZY:
+            pytest.xfail("Lazy mode is not fully supported yet")
+
+        descriptions_path: Path = request.getfixturevalue(descriptions_path)
+
+        metagen = MetaGen.from_path(
+            path=input_csv_path, descriptions_path=descriptions_path, mode=mode
+        )
+        metadata = metagen.compute_metadata()
+
+        for field in ["Description", "Long Name"]:
+            assert field in metadata.columns
+            assert metadata[field].notnull().all()
+            assert metadata[field].notna().all()
+
 
 def test_from_path_unsupported_mode(
     tmp_dir_path: Path,
