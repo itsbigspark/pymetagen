@@ -86,11 +86,11 @@ class MetaGen:
         path: Path,
         create_regex: bool | None = None,
         descriptions: pl.LazyFrame | None = None,
-        mode: MetaGenSupportedLoadingModes = MetaGenSupportedLoadingModes.LAZY,
+        mode: MetaGenSupportedLoadingModes = MetaGenSupportedLoadingModes.EAGER,
     ) -> DataFrameT:
         mode_mapping = {
             MetaGenSupportedLoadingModes.LAZY: LazyDataLoader,
-            MetaGenSupportedLoadingModes.FULL: DataLoader,
+            MetaGenSupportedLoadingModes.EAGER: DataLoader,
         }
         try:
             LoaderClass = mode_mapping[mode]
