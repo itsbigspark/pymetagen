@@ -56,7 +56,9 @@ class MetaGen:
         data = LoaderClass(path)()
 
         if descriptions_path is not None:
-            descriptions = json.loads(descriptions_path.read_text())
+            descriptions = json.loads(descriptions_path.read_text())[
+                "descriptions"
+            ]
         else:
             descriptions = None
 
@@ -72,6 +74,7 @@ class MetaGen:
             "75%",
         ]
         pymetagen_columns = [
+            "Long Name",
             "Type",
             "Description",
             "Min",
@@ -152,8 +155,15 @@ class MetaGen:
         metadata["Values"] = number_of_unique_values
 
         metadata["Description"] = {}
+        metadata["Long Name"] = {}
         for column in self.data.columns:
-            metadata["Description"][column] = self.descriptions.get(column, "")
+            description_data = self.descriptions.get(column, {})
+            metadata["Description"][column] = description_data.get(
+                "description", ""
+            )
+            metadata["Long Name"][column] = description_data.get(
+                "long_name", ""
+            )
 
         metadata: pd.DataFrame = pd.DataFrame(metadata)
         metadata.index.name = "Name"
