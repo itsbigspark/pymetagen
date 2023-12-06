@@ -6,7 +6,10 @@ import pytest
 
 from pymetagen import MetaGen, json_metadata_to_pandas
 from pymetagen.datatypes import MetaGenSupportedLoadingModes
-from pymetagen.exceptions import FileTypeUnsupportedError
+from pymetagen.exceptions import (
+    FileTypeUnsupportedError,
+    LoadingModeUnsupportedError,
+)
 
 input_paths = ["input_csv_path", "input_parquet_path", "input_xlsx_path"]
 
@@ -128,3 +131,13 @@ class TestMetaGenFromPath:
                 path=tmp_dir_path / "test.unsupported",
                 mode=mode,
             )
+
+
+def test_from_path_unsupported_mode(
+    tmp_dir_path: Path,
+):
+    with pytest.raises(LoadingModeUnsupportedError):
+        MetaGen.from_path(
+            path=tmp_dir_path / "test.csv",
+            mode="unsupported_mode",
+        )
