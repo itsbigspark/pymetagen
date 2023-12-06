@@ -93,6 +93,7 @@ class TestMetaGen:
         assert len(outdata) == len(data.columns)
         assert list(outdata.columns) == [
             "Type",
+            "Description",
             "Min",
             "Max",
             "Min Length",

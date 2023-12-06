@@ -3,50 +3,6 @@ PyMetaGen
 =========
 
 Python Metadata Generator
-
-
-- Command Line Interface
-
-$ pymetagen -re --input (first argument) $(IN_FILE) \ --sheet-name 
- --output  (-o) $(OUT_METADATA) \
---regex Array(Field Names) --descriptions JSON_FILE | DATA_LIKE_FILE
-
-
-- Python Implementation
-
-Polars implementation
----------------------
-import os
-
-class MetaGen:
-    def __init__(
-        self,
-        input_data: DataFrameT,
-        output_path: str,
-        create_regex: bool | None = None,
-        descriptions: pl.LazyFrame | None  = None,
-    )
-
-    self.data = self.load_data(input_data)
-    self.output_path = output_path
-    self.create_regex = create_regex
-    self.descriptions = descriptions
-
-    def write_metadata(self) -> None:
-        basename, ext_output = tuple(
-            os.path.basename(self.output_file).split('.')
-        )
-        if 'csv' in ext_output:
-            self.write_csv_metadata()
-        elif 'xlsx' in ext_output:
-            self.write_excel_metadata()
-        elif 'json' in ext_output:
-            self.write_json_metadata()
-        elif ext_outpt == '.parquet':
-            self.write_parquet_metadata()
-    
-    def infer_datatypes(self):
-        pass
 """
 
 import json
@@ -74,19 +30,16 @@ class MetaGen:
     def __init__(
         self,
         data: DataFrameT,
-        create_regex: bool | None = None,
-        descriptions: pl.LazyFrame | None = None,
+        descriptions: dict[str, str] | None = None,
     ):
         self.data = data
-        self.create_regex = create_regex
-        self.descriptions = descriptions
+        self.descriptions = descriptions or {}
 
     @classmethod
     def from_path(
         cls,
         path: Path,
-        create_regex: bool | None = None,
-        descriptions: pl.LazyFrame | None = None,
+        descriptions_path: Path | None = None,
         mode: MetaGenSupportedLoadingModes = MetaGenSupportedLoadingModes.EAGER,
     ) -> "MetaGen":
         mode_mapping = {
@@ -102,9 +55,13 @@ class MetaGen:
             )
         data = LoaderClass(path)()
 
+        if descriptions_path is not None:
+            descriptions = json.loads(descriptions_path.read_text())
+        else:
+            descriptions = None
+
         return cls(
             data=data,
-            create_regex=create_regex,
             descriptions=descriptions,
         )
 
@@ -116,6 +73,7 @@ class MetaGen:
         ]
         pymetagen_columns = [
             "Type",
+            "Description",
             "Min",
             "Max",
             "Min Length",
@@ -192,6 +150,10 @@ class MetaGen:
             self.data.columns
         ), assert_msg.format("number of unique values")
         metadata["Values"] = number_of_unique_values
+
+        metadata["Description"] = {}
+        for column in self.data.columns:
+            metadata["Description"][column] = self.descriptions.get(column, "")
 
         metadata: pd.DataFrame = pd.DataFrame(metadata)
         metadata.index.name = "Name"
@@ -351,7 +313,7 @@ class MetaGen:
         metadata.to_csv(output_path)
 
     def _write_json_metadata(self, output_path: str) -> None:
-        metadata = self.compute_metadata().to_dict()
+        metadata = self.compute_metadata().to_dict(orient="index")
         json_to_dump = {"fields": metadata}
         with open(output_path, "w") as f:
             json.dump(json_to_dump, f, indent=4, ensure_ascii=False)
@@ -366,4 +328,4 @@ def json_metadata_to_pandas(path: Path) -> pd.DataFrame:
     with path.open() as f:
         metadata = json.load(f)
     metadata = metadata["fields"]
-    return pd.DataFrame(metadata)
+    return pd.DataFrame.from_dict(metadata, orient="index")

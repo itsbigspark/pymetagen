@@ -13,7 +13,11 @@ from pymetagen import MetaGen, __version__
     "-i",
     "--input",
     type=click.Path(
-        exists=True, file_okay=True, dir_okay=False, path_type=Path
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        path_type=Path,
+        readable=True,
     ),
     required=True,
     help="Input file path. Can be of type: .csv, .parquet, .xlsx, .json",
@@ -21,16 +25,34 @@ from pymetagen import MetaGen, __version__
 @click.option(
     "-o",
     "--output",
-    type=click.Path(file_okay=True, dir_okay=False, path_type=Path),
+    type=click.Path(
+        file_okay=True, dir_okay=False, path_type=Path, writable=True
+    ),
     required=True,
     help="Output file path. Can be of type: .csv, .parquet, .xlsx, .json",
 )
-def cli(input: Path, output: Path) -> None:
+@click.option(
+    "-d",
+    "--descriptions",
+    type=click.Path(
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        path_type=Path,
+        readable=True,
+    ),
+    required=False,
+    help=(
+        "(optioal) Path to a JSON file containing descriptions for each"
+        " column."
+    ),
+)
+def cli(input: Path, output: Path, descriptions: Path | None) -> None:
     """
     A tool to generate metadata for tabular data.
     """
     click.echo(f"Generating metadata for {input}...")
-    metagen = MetaGen.from_path(path=input)
+    metagen = MetaGen.from_path(path=input, descriptions_path=descriptions)
     metagen.write_metadata(outpath=output)
 
 

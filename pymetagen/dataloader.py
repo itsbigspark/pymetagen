@@ -1,36 +1,6 @@
 """
 Data Loader
 ===========
-polars_default_read_csv_options
-{
-    has_header: bool = True,
-    columns: Sequence[int] | Sequence[str] | None = None,
-    new_columns: Sequence[str] | None = None,
-    separator: str = ",",
-    comment_char: str | None = None,
-    quote_char: str | None = r'"',
-    skip_rows: int = 0,
-    dtypes: Mapping[str, PolarsDataType] | Sequence[PolarsDataType] | None = None,
-    null_values: str | Sequence[str] | dict[str, str] | None = None,
-    missing_utf8_is_empty_string: bool = False,
-    ignore_errors: bool = False,
-    try_parse_dates: bool = False,
-    n_threads: int | None = None,
-    infer_schema_length: int | None = N_INFER_DEFAULT,
-    batch_size: int = 8192,
-    n_rows: int | None = None,
-    encoding: CsvEncoding | str = "utf8",
-    low_memory: bool = False,
-    rechunk: bool = True,
-    use_pyarrow: bool = False,
-    storage_options: dict[str, Any] | None = None,
-    skip_rows_after_header: int = 0,
-    row_count_name: str | None = None,
-    row_count_offset: int = 0,
-    sample_size: int = 1024,
-    eol_char: str = "\n",
-    raise_if_empty: bool = True,
-}
 """
 
 import os
@@ -56,7 +26,7 @@ POLARS_DEFAULT_READ_CSV_OPTIONS: dict[str, Any] = {
     "has_header": True,
     "new_columns": None,
     "separator": ",",
-    "comment_char": None,
+    "comment_prefix": None,
     "quote_char": r'"',
     "skip_rows": 0,
     "dtypes": None,
