@@ -336,11 +336,11 @@ class MetaGen:
 
     def _write_excel_metadata(self, output_path: str) -> None:
         metadata = self.compute_metadata()
-        metadata.to_excel(output_path, index=False)
+        metadata.to_excel(output_path)
 
     def _write_csv_metadata(self, output_path: str) -> None:
         metadata = self.compute_metadata()
-        metadata.to_csv(output_path, index=False)
+        metadata.to_csv(output_path)
 
     def _write_json_metadata(self, output_path: str) -> None:
         metadata = self.compute_metadata().to_dict()
