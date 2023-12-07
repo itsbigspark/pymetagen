@@ -2,6 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
+import polars as pl
+
+from pymetagen.typing import DataFrameT
+
 
 class EnumListMixin:
     @classmethod
@@ -27,3 +31,14 @@ def selectively_update_dict(d: dict[str, Any], new_d: dict[str, Any]) -> None:
                 d[k] = v
         else:
             d[k] = v
+
+
+def collect(df: DataFrameT):
+    """
+    Collects a dataframe. If the dataframe is a polars DataFrame, does nothing,
+    if it is a polars LazyFrame, collects it.
+    """
+    if isinstance(df, pl.LazyFrame):
+        return df.collect()
+
+    return df

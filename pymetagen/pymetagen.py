@@ -24,6 +24,7 @@ from pymetagen.exceptions import (
     LoadingModeUnsupportedError,
 )
 from pymetagen.typing import DataFrameT
+from pymetagen.utils import collect
 
 
 class MetaGen:
@@ -232,7 +233,8 @@ class MetaGen:
         self, columns_to_drop: list[str] = None
     ) -> dict[str, dict[str, Any]]:
         metadata_table = (
-            self.data.describe()
+            self.data.pipe(collect)
+            .describe()
             .to_pandas()
             .rename(columns={"describe": "Name"})
             .set_index("Name")
@@ -261,7 +263,7 @@ class MetaGen:
     ) -> dict[str, int]:
         nulls = {}
         for col in self.data.columns:
-            data = self.data.select(col)
+            data = self.data.pipe(collect).select(col)
             null_count = data.null_count().row(0)[0]
             zero_count = (
                 data.filter(pl.col(col) == 0).shape[0]
@@ -277,7 +279,7 @@ class MetaGen:
         pos = {}
         for col in self.data.columns:
             pos_count = (
-                self.data.filter(pl.col(col) > 0).shape[0]
+                self.data.filter(pl.col(col) > 0).pipe(collect).shape[0]
                 if types[col] in MetaGenDataType.numeric_data_types
                 else None
             )
@@ -290,7 +292,7 @@ class MetaGen:
         neg = {}
         for col in self.data.columns:
             neg_count = (
-                self.data.filter(pl.col(col) < 0).shape[0]
+                self.data.filter(pl.col(col) < 0).pipe(collect).shape[0]
                 if types[col] in MetaGenDataType.numeric_data_types
                 else None
             )
@@ -309,6 +311,7 @@ class MetaGen:
                     )
                     .select(f"{col}_len")
                     .min()
+                    .pipe(collect)
                     .row(0)[0]
                 )
             else:
@@ -327,6 +330,7 @@ class MetaGen:
                     )
                     .select(f"{col}_len")
                     .max()
+                    .pipe(collect)
                     .row(0)[0]
                 )
             else:
@@ -336,7 +340,7 @@ class MetaGen:
     def _number_of_unique_counts(self) -> dict[str, int]:
         unique_counts = {}
         for col in self.data.columns:
-            unique_counts[col] = self.data.select(col).n_unique()
+            unique_counts[col] = self.data.select(col).pipe(collect).n_unique()
         return unique_counts
 
     def _number_of_unique_values(
@@ -344,7 +348,9 @@ class MetaGen:
     ) -> dict[str, int]:
         unique_values = {}
         for col in self.data.columns:
-            unique_values[col] = self.data.select(col).unique()[col].to_list()
+            unique_values[col] = (
+                self.data.select(col).pipe(collect).unique()[col].to_list()
+            )
 
         unique_values = {
             col: _list if len(_list) < max_number_of_unique_to_show else None

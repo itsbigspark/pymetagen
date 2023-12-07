@@ -19,20 +19,12 @@ input_paths = ["input_csv_path", "input_parquet_path", "input_xlsx_path"]
     "data",
     [
         "eager_data",
-        pytest.param(
-            "lazy_data",
-            marks=pytest.mark.xfail(
-                reason="LazyFrame is not fully supported yet"
-            ),
-        ),
+        "lazy_data",
     ],
 )
 class TestMetaGen:
     """
     Test the MetaGen class on both eager and lazy data.
-
-    The lazy data test is marked as xfail because the current implementation
-    of MetaGen does not fully support lazy data yet.
 
     Each test is parametrized with the data fixture name and should run:
 
@@ -154,9 +146,6 @@ class TestMetaGenFromPath:
         input_csv_path: Path,
         mode: MetaGenSupportedLoadingModes,
     ):
-        if mode == MetaGenSupportedLoadingModes.LAZY:
-            pytest.xfail("Lazy mode is not fully supported yet")
-
         descriptions_path: Path = request.getfixturevalue(descriptions_path)
 
         metagen = MetaGen.from_path(
