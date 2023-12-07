@@ -47,12 +47,25 @@ from pymetagen import MetaGen, __version__
         " column."
     ),
 )
-def cli(input: Path, output: Path, descriptions: Path | None) -> None:
+@click.option(
+    "-m",
+    "--mode",
+    type=click.Choice(["lazy", "eager"], case_sensitive=False),
+    callback=lambda ctx, param, value: value.lower(),
+    default="eager",
+    required=False,
+    help="(optional) Whether to use lazy or eager mode. Defaults to eager.",
+)
+def cli(
+    input: Path, output: Path, descriptions: Path | None, mode: str
+) -> None:
     """
     A tool to generate metadata for tabular data.
     """
     click.echo(f"Generating metadata for {input}...")
-    metagen = MetaGen.from_path(path=input, descriptions_path=descriptions)
+    metagen = MetaGen.from_path(
+        path=input, descriptions_path=descriptions, mode=mode
+    )
     metagen.write_metadata(outpath=output)
 
 
