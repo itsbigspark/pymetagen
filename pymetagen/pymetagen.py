@@ -344,8 +344,8 @@ class MetaGen:
         return unique_counts
 
     def _number_of_unique_values(
-        self, max_number_of_unique_to_show: int = 7
-    ) -> dict[str, int]:
+        self, max_number_of_unique_to_show: int = 10
+    ) -> dict[str, list[Any] | None]:
         unique_values = {}
         for col in self.data.columns:
             unique_values[col] = (
