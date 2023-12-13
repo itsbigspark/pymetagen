@@ -73,6 +73,8 @@ class MetaGenDataType(str, Enum):
         UInt16,
         UInt32,
         UInt64,
+        float,
+        integer,
     ]
 
     date_data_types: list[MetaGenDataType] = [
@@ -80,11 +82,14 @@ class MetaGenDataType(str, Enum):
         Datetime,
         Duration,
         Time,
+        date,
+        datetime,
     ]
 
     categorical_data_types: list[MetaGenDataType] = [
         Categorical,
         Utf8,
+        string,
     ]
 
 
