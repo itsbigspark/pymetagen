@@ -11,7 +11,6 @@ from typing import Any
 
 import pandas as pd
 import polars as pl
-
 from polars.exceptions import PolarsPanicError
 
 from pymetagen.dataloader import DataLoader, LazyDataLoader
