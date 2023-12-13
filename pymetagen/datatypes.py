@@ -98,6 +98,8 @@ def dtype_to_metagentype(dtype: Any):
         "UInt": MetaGenDataType.integer,
         "Datetime": MetaGenDataType.datetime,
         "Date": MetaGenDataType.date,
+        "Categorical": MetaGenDataType.string,
+        "Boolean": MetaGenDataType.bool,
     }
 
     for key, value in starts_with_map.items():
