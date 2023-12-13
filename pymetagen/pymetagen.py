@@ -12,6 +12,8 @@ from typing import Any
 import pandas as pd
 import polars as pl
 
+from polars.exceptions import PolarsPanicError
+
 from pymetagen.dataloader import DataLoader, LazyDataLoader
 from pymetagen.datatypes import (
     MetaGenDataType,
@@ -230,8 +232,9 @@ class MetaGen:
         return metadata[pymetagen_columns]
 
     def _get_simple_metadata(
-        self, columns_to_drop: list[str] = None
+        self, columns_to_drop: list[str] | None = None
     ) -> dict[str, dict[str, Any]]:
+        columns_to_drop = columns_to_drop or []
         metadata_table = (
             self.data.pipe(collect)
             .describe()
@@ -340,7 +343,13 @@ class MetaGen:
     def _number_of_unique_counts(self) -> dict[str, int]:
         unique_counts = {}
         for col in self.data.columns:
-            unique_counts[col] = self.data.select(col).pipe(collect).n_unique()
+            try:
+                unique_counts[col] = (
+                    self.data.select(col).pipe(collect).n_unique()
+                )
+            except PolarsPanicError:
+                # NOTE: @vdiaz `n_unique` operation not supported for dtype `null`
+                unique_counts[col] = 1
         return unique_counts
 
     def _number_of_unique_values(
@@ -348,9 +357,13 @@ class MetaGen:
     ) -> dict[str, list[Any] | None]:
         unique_values = {}
         for col in self.data.columns:
-            unique_values[col] = (
-                self.data.select(col).pipe(collect).unique()[col].to_list()
-            )
+            try:
+                unique_values[col] = (
+                    self.data.select(col).pipe(collect).unique()[col].to_list()
+                )
+            except PolarsPanicError:
+                # NOTE: @vdiaz `unique` operation not supported for dtype `null`
+                unique_values[col] = [None]
 
         unique_values = {
             col: _list if len(_list) < max_number_of_unique_to_show else None
