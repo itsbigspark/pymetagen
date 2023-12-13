@@ -92,14 +92,14 @@ def dtype_to_metagentype(dtype: Any):
     dtype: str = str(dtype)
 
     starts_with_map = {
-        "Utf": MetaGenDataType.string,
-        "Float": MetaGenDataType.float,
-        "Int": MetaGenDataType.integer,
-        "UInt": MetaGenDataType.integer,
-        "Datetime": MetaGenDataType.datetime,
-        "Date": MetaGenDataType.date,
-        "Categorical": MetaGenDataType.string,
-        "Boolean": MetaGenDataType.bool,
+        "Utf": MetaGenDataType.string.value,
+        "Float": MetaGenDataType.float.value,
+        "Int": MetaGenDataType.integer.value,
+        "UInt": MetaGenDataType.integer.value,
+        "Datetime": MetaGenDataType.datetime.value,
+        "Date": MetaGenDataType.date.value,
+        "Categorical": MetaGenDataType.string.value,
+        "Boolean": MetaGenDataType.bool.value,
     }
 
     for key, value in starts_with_map.items():
