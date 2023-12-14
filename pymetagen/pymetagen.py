@@ -310,7 +310,10 @@ class MetaGen:
             if types[col] in MetaGenDataType.categorical_data_types:
                 min_str_length[col] = (
                     self.data.with_columns(
-                        pl.col(col).str.lengths().alias(f"{col}_len")
+                        pl.col(col)
+                        .cast(pl.Utf8)
+                        .str.lengths()
+                        .alias(f"{col}_len")
                     )
                     .select(f"{col}_len")
                     .min()
@@ -329,7 +332,10 @@ class MetaGen:
             if types[col] in MetaGenDataType.categorical_data_types:
                 max_str_length[col] = (
                     self.data.with_columns(
-                        pl.col(col).str.lengths().alias(f"{col}_len")
+                        pl.col(col)
+                        .cast(pl.Utf8)
+                        .str.lengths()
+                        .alias(f"{col}_len")
                     )
                     .select(f"{col}_len")
                     .max()
