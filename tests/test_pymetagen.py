@@ -99,6 +99,33 @@ class TestMetaGen:
             "Values",
         ]
 
+    @pytest.mark.parametrize(
+        "column_name, expected_value",
+        [
+            ["# nulls", 5],
+            ["# empty/zero", 5],
+            ["# unique", 1],
+            ["Values", [None]],
+        ],
+    )
+    def test_metadata_data_frame_with_null_column(
+        self,
+        capsys,
+        data: str,
+        request: pytest.FixtureRequest,
+        column_name: str,
+        expected_value: int | None,
+    ):
+        null_data = {
+            "data_values": [None, None, None, None, None],
+        }
+        null_data = pl.DataFrame(null_data, schema={"data_values": pl.Null})
+        metagen = MetaGen(data=null_data)
+        metadata = metagen.compute_metadata()
+        metadata_dict = metadata.to_dict(orient="records").pop()
+
+        assert metadata_dict[column_name] == expected_value
+
 
 @pytest.mark.parametrize(
     "mode",
