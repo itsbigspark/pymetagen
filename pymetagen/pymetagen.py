@@ -228,7 +228,7 @@ class MetaGen:
         metadata: pd.DataFrame = pd.DataFrame(metadata)
         metadata.index.name = "Name"
 
-        return metadata[pymetagen_columns]
+        return metadata[pymetagen_columns].fillna(None)
 
     def _get_simple_metadata(
         self, columns_to_drop: list[str] | None = None
