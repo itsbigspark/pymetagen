@@ -235,7 +235,8 @@ class MetaGen:
     ) -> dict[str, dict[str, Any]]:
         columns_to_drop = columns_to_drop or []
         metadata_table = (
-            self.data.pipe(collect)
+            self.data.with_columns(pl.col(pl.Categorical).cast(pl.Utf8))
+            .pipe(collect)
             .describe()
             .to_pandas()
             .rename(columns={"describe": "Name"})
