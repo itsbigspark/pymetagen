@@ -250,6 +250,7 @@ class MetaGen:
                     "std": "Std",
                 }
             )
+            .astype({"# nulls": int})
             .to_dict()
         )
 
@@ -399,12 +400,12 @@ class MetaGen:
         write_metadata(outpath)
 
     def _write_excel_metadata(self, output_path: str) -> None:
-        metadata = self.compute_metadata()
-        metadata.to_excel(output_path)
+        metadata = self.compute_metadata().reset_index()
+        metadata.to_excel(output_path, sheet_name="Fields", index=False)
 
     def _write_csv_metadata(self, output_path: str) -> None:
-        metadata = self.compute_metadata()
-        metadata.to_csv(output_path)
+        metadata = self.compute_metadata().reset_index()
+        metadata.to_csv(output_path, index=False)
 
     def _write_json_metadata(self, output_path: str) -> None:
         metadata = self.compute_metadata().to_dict(orient="index")
