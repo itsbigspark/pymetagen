@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
 import polars as pl
 from polars.exceptions import PolarsPanicError
@@ -225,7 +226,7 @@ class MetaGen:
                 "long_name", ""
             )
 
-        metadata: pd.DataFrame = pd.DataFrame(metadata)
+        metadata: pd.DataFrame = pd.DataFrame(metadata).replace(np.nan, None)
         metadata.index.name = "Name"
 
         return metadata[pymetagen_columns]
@@ -235,7 +236,8 @@ class MetaGen:
     ) -> dict[str, dict[str, Any]]:
         columns_to_drop = columns_to_drop or []
         metadata_table = (
-            self.data.pipe(collect)
+            self.data.with_columns(pl.col(pl.Categorical).cast(pl.Utf8))
+            .pipe(collect)
             .describe()
             .to_pandas()
             .rename(columns={"describe": "Name"})
@@ -278,7 +280,7 @@ class MetaGen:
 
     def _number_of_positive_values(
         self, types: dict[str, MetaGenDataType]
-    ) -> dict[str, int]:
+    ) -> dict[str, int | None]:
         pos = {}
         for col in self.data.columns:
             pos_count = (
@@ -291,7 +293,7 @@ class MetaGen:
 
     def _number_of_negative_values(
         self, types: dict[str, MetaGenDataType]
-    ) -> dict[str, int]:
+    ) -> dict[str, int | None]:
         neg = {}
         for col in self.data.columns:
             neg_count = (
@@ -304,13 +306,16 @@ class MetaGen:
 
     def _minimal_string_length(
         self, types: dict[str, MetaGenDataType]
-    ) -> dict[str, int]:
+    ) -> dict[str, int | None]:
         min_str_length = {}
         for col in self.data.columns:
             if types[col] in MetaGenDataType.categorical_data_types:
                 min_str_length[col] = (
                     self.data.with_columns(
-                        pl.col(col).str.lengths().alias(f"{col}_len")
+                        pl.col(col)
+                        .cast(pl.Utf8)
+                        .str.lengths()
+                        .alias(f"{col}_len")
                     )
                     .select(f"{col}_len")
                     .min()
@@ -323,13 +328,16 @@ class MetaGen:
 
     def _maximal_string_length(
         self, types: dict[str, MetaGenDataType]
-    ) -> dict[str, int]:
+    ) -> dict[str, int | None]:
         max_str_length = {}
         for col in self.data.columns:
             if types[col] in MetaGenDataType.categorical_data_types:
                 max_str_length[col] = (
                     self.data.with_columns(
-                        pl.col(col).str.lengths().alias(f"{col}_len")
+                        pl.col(col)
+                        .cast(pl.Utf8)
+                        .str.lengths()
+                        .alias(f"{col}_len")
                     )
                     .select(f"{col}_len")
                     .max()
@@ -354,7 +362,7 @@ class MetaGen:
 
     def _number_of_unique_values(
         self, max_number_of_unique_to_show: int = 10
-    ) -> dict[str, list[Any] | None]:
+    ) -> dict[str, list[Any] | list[None]]:
         unique_values = {}
         for col in self.data.columns:
             try:
