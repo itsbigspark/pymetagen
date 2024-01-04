@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import os
+import pathlib
+from glob import glob
 from typing import Any
 
 import polars as pl
 
-from pymetagen.typing import DataFrameT
+from pymetagen._typing import DataFrameT
 
 
 class EnumListMixin:
@@ -42,3 +45,40 @@ def collect(df: DataFrameT):
         return df.collect()
 
     return df
+
+
+def get_nested_parquet_path(base_path: str) -> str:
+    """
+    Recursively search for a parquet file in a nested directory structure.
+    For example, if the base path is:
+            - base_path = /path/foo.parquet
+    but foo.parquet is a directory of partitioned parquet files, such as:
+            - /path/foo.parquet/month=01/partition0.parquet
+            - /path/foo.parquet/month=01/partition1.parquet
+            - /path/foo.parquet/month=02/partition0.parquet
+            - /path/foo.parquet/month=02/partition1.parquet
+    then this function will return:
+            - /path/foo.parquet/*/*.parquet
+    It will add a wildcard "*" for each partitioned directory that it finds.
+
+    Args:
+        base_path: base parquet directory
+
+    Returns:
+        recursive path to parquet file
+    """
+    if isinstance(base_path, pathlib.PosixPath):
+        base_path = str(base_path)
+    nested_path = os.path.abspath(base_path)
+    list_of_paths = glob(nested_path)
+    path_in_nested_paths = list_of_paths.pop() if list_of_paths else ""
+    if os.path.isdir(path_in_nested_paths):
+        parquet = ".parquet"
+        new_nested_base_path = os.path.join(base_path, "*")
+        new_nested_path = os.path.join(base_path, f"*{parquet}")
+        if glob(new_nested_path):
+            return new_nested_path
+        else:
+            return get_nested_parquet_path(new_nested_base_path)
+    else:
+        return nested_path

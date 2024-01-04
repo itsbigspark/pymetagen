@@ -13,7 +13,7 @@ from polars.datatypes.constants import N_INFER_DEFAULT
 
 from pymetagen.datatypes import MetaGenSupportedFileExtensions
 from pymetagen.exceptions import FileTypeUnsupportedError
-from pymetagen.utils import selectively_update_dict
+from pymetagen.utils import get_nested_parquet_path, selectively_update_dict
 
 POLARS_DEFAULT_READ_CSV_OPTIONS: dict[str, Any] = {
     "columns": None,
@@ -155,9 +155,9 @@ class DataLoader:
         )
 
     def _load_parquet_data(self) -> pl.DataFrame:
-        return pl.read_parquet(
-            source=self.path, **self.polars_read_parquet_options
-        )
+        pl.enable_string_cache()
+        path = get_nested_parquet_path(self.path)
+        return pl.read_parquet(source=path, **self.polars_read_parquet_options)
 
     def _load_json_data(self):
         raise NotImplementedError
@@ -191,6 +191,6 @@ class LazyDataLoader(DataLoader):
         return super()._load_excel_data()
 
     def _load_parquet_data(self) -> pl.LazyFrame:
-        return pl.scan_parquet(
-            source=self.path, **self.polars_read_parquet_options
-        )
+        pl.enable_string_cache()
+        path = get_nested_parquet_path(self.path)
+        return pl.scan_parquet(source=path, **self.polars_read_parquet_options)

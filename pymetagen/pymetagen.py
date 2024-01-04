@@ -14,6 +14,7 @@ import pandas as pd
 import polars as pl
 from polars.exceptions import PolarsPanicError
 
+from pymetagen._typing import DataFrameT
 from pymetagen.dataloader import DataLoader, LazyDataLoader
 from pymetagen.datatypes import (
     MetaGenDataType,
@@ -25,7 +26,6 @@ from pymetagen.exceptions import (
     FileTypeUnsupportedError,
     LoadingModeUnsupportedError,
 )
-from pymetagen.typing import DataFrameT
 from pymetagen.utils import collect
 
 
