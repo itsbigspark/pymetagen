@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import pathlib
 from glob import glob
 from typing import Any
 
@@ -67,9 +66,7 @@ def get_nested_parquet_path(base_path: str) -> str:
     Returns:
         recursive path to parquet file
     """
-    if isinstance(base_path, pathlib.PosixPath):
-        base_path = str(base_path)
-    nested_path = os.path.abspath(base_path)
+    nested_path = os.path.abspath(str(base_path))
     list_of_paths = glob(nested_path)
     path_in_nested_paths = list_of_paths.pop() if list_of_paths else ""
     if os.path.isdir(path_in_nested_paths):
