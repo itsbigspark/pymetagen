@@ -90,6 +90,7 @@ class MetaGenDataType(str, Enum):
         Categorical,
         Utf8,
         string,
+        category,
     ]
 
 
