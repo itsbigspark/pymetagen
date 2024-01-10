@@ -155,6 +155,12 @@ class DataLoader:
         )
 
     def _load_parquet_data(self) -> pl.DataFrame:
+        """
+        IMPORTANT:
+        reading the same data of partitioned parquet files with different
+        partitions will not preserve the column order. This is a limitation of
+        polars.
+        """
         pl.enable_string_cache()
         path = get_nested_parquet_path(self.path)
         return pl.read_parquet(source=path, **self.polars_read_parquet_options)
