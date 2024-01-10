@@ -66,7 +66,7 @@ def get_nested_parquet_path(base_path: str) -> str:
     Returns:
         recursive path to parquet file
     """
-    nested_path = base_path
+    nested_path = str(base_path)
     list_of_paths = glob(nested_path)
     path_in_nested_paths = list_of_paths.pop() if list_of_paths else ""
     if os.path.isdir(path_in_nested_paths):
