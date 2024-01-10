@@ -19,6 +19,7 @@ pre-commit = "^3.3.3"
 pytest = "^7.4.0"
 coverage = "^7.3.0"
 xlsxwriter = "^3.1.9"
+ipykernel = "^6.28.0"
 
 [tool.poetry.scripts]
 metagen = 'pymetagen.app:cli'
