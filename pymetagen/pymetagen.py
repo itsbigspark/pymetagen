@@ -12,7 +12,6 @@ from typing import Any
 import numpy as np
 import pandas as pd
 import polars as pl
-from polars.exceptions import PolarsPanicError
 
 from pymetagen._typing import DataFrameT
 from pymetagen.dataloader import DataLoader, LazyDataLoader
@@ -348,16 +347,23 @@ class MetaGen:
                 max_str_length[col] = None
         return max_str_length
 
+    def _is_column_all_null(self, col: str) -> bool:
+        """
+        Returns True if all values in the column are null.
+        """
+        df = self.data.select(col).pipe(collect)
+        return df.null_count().row(0)[0] == len(df)
+
     def _number_of_unique_counts(self) -> dict[str, int]:
         unique_counts = {}
         for col in self.data.columns:
-            try:
+            if not self._is_column_all_null(col):
                 unique_counts[col] = (
                     self.data.select(col).pipe(collect).n_unique()
                 )
-            except PolarsPanicError:
-                # NOTE: @vdiaz `n_unique` operation not supported for dtype `null`
+            else:
                 unique_counts[col] = 1
+
         return unique_counts
 
     def _number_of_unique_values(
@@ -365,12 +371,19 @@ class MetaGen:
     ) -> dict[str, list[Any] | list[None]]:
         unique_values = {}
         for col in self.data.columns:
-            try:
-                unique_values[col] = (
+            if not self._is_column_all_null(col):
+                values = (
                     self.data.select(col).pipe(collect).unique()[col].to_list()
                 )
-            except PolarsPanicError:
-                # NOTE: @vdiaz `unique` operation not supported for dtype `null`
+                try:
+                    values.sort(
+                        key=lambda e: (e is None, e)
+                    )  # allow None to be sorted
+                except Exception:
+                    # if we couldn't sort, just return the values as is
+                    pass
+                unique_values[col] = values
+            else:
                 unique_values[col] = [None]
 
         unique_values = {
