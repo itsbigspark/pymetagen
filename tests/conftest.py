@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any
 
 import polars as pl
 import pytest
@@ -52,3 +53,12 @@ def descriptions_csv_path() -> Path:
 @pytest.fixture
 def descriptions_json_path() -> Path:
     return Path("tests/data/descriptions.json")
+
+
+@pytest.fixture
+def columns_with_nulls() -> dict[str, list[Any]]:
+    return {
+        "all_nulls": [None, None, None, None, None],
+        "no_nulls": [1, 2, 3, 4, 5],
+        "mixed": [1, 2, 3, None, None],
+    }

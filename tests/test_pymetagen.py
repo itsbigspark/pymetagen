@@ -128,6 +128,39 @@ class TestMetaGen:
 
 
 @pytest.mark.parametrize(
+    "df_constructor",
+    [
+        pl.DataFrame,
+        pl.LazyFrame,
+    ],
+)
+class TestMetadataMethods:
+    """Run tests on individual methods of the MetaGen class."""
+
+    def test__number_of_unique_counts(
+        self, df_constructor: Callable, columns_with_nulls
+    ):
+        df = df_constructor(columns_with_nulls)
+
+        metagen = MetaGen(data=df)
+        n_unique = metagen._number_of_unique_counts()
+        assert n_unique == {"all_nulls": 1, "no_nulls": 5, "mixed": 4}
+
+    def test__number_of_unique_values(
+        self, df_constructor: Callable, columns_with_nulls
+    ):
+        df = df_constructor(columns_with_nulls)
+
+        metagen = MetaGen(data=df)
+        n_unique = metagen._number_of_unique_values()
+        assert n_unique == {
+            "all_nulls": [None],
+            "no_nulls": [1, 2, 3, 4, 5],
+            "mixed": [1, 2, 3, None],
+        }
+
+
+@pytest.mark.parametrize(
     "mode",
     MetaGenSupportedLoadingModes.list(),
 )

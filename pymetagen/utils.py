@@ -39,6 +39,9 @@ def collect(df: DataFrameT):
     """
     Collects a dataframe. If the dataframe is a polars DataFrame, does nothing,
     if it is a polars LazyFrame, collects it.
+
+    Usage:
+        result = df.pipe(collect).method()
     """
     if isinstance(df, pl.LazyFrame):
         return df.collect()
