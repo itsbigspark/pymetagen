@@ -1,12 +1,23 @@
 from __future__ import annotations
 
 import os
+from enum import Enum
 from glob import glob
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+import numpy as np
 import polars as pl
 
 from pymetagen._typing import DataFrameT
+
+if TYPE_CHECKING:
+    from pymetagen.datatypes import MetaGenSupportedLoadingModes
+
+
+class InspectionMode(str, Enum):
+    head = "head"
+    tail = "tail"
+    sample = "sample"
 
 
 class EnumListMixin:
@@ -83,16 +94,52 @@ def get_nested_parquet_path(base_path: str) -> str:
         return nested_path
 
 
-def inspect_data(
+def sample(
     df: DataFrameT,
-    tbl_cols: int,
+    mode: MetaGenSupportedLoadingModes,
     tbl_rows: int = 10,
-    fmt_str_lengths: int = 50,
-) -> None:
+    random_seed: int | None = None,
+    with_replacement: bool = False,
+) -> DataFrameT:
+    if mode == "eager":
+        return df.sample(n=tbl_rows, with_replacement=with_replacement)
+    elif mode == "lazy":
+        np.random.seed(random_seed)
+        row_depth = (
+            df.select(pl.first()).select(pl.count()).pipe(collect)[0, 0]
+        )
+        row_indexes = np.random.choice(
+            row_depth,
+            size=tbl_rows,
+            replace=with_replacement,
+        )
+        return (
+            df.with_columns(
+                pl.Series(pl.arange(0, row_depth, eager=True)).alias(
+                    "row_index"
+                )
+            )
+            .filter(pl.col("row_index").is_in(row_indexes))
+            .drop("row_index")
+        )
+
+
+def extract_data(
+    df: DataFrameT,
+    mode: MetaGenSupportedLoadingModes,
+    tbl_rows: int = 10,
+    inspection_mode: InspectionMode = InspectionMode.head,
+    random_seed: int | None = None,
+    with_replacement: bool = False,
+) -> DataFrameT:
     """
-    Inspect a data frame.
+    Extract a data.
     """
-    with pl.Config(
-        fmt_str_lengths=fmt_str_lengths, tbl_cols=tbl_cols, tbl_rows=tbl_rows
-    ):
-        df.head(tbl_rows).pipe(collect).pipe(print)
+    if inspection_mode == InspectionMode.sample:
+        df = df.pipe(sample, mode, tbl_rows, random_seed, with_replacement)
+    elif inspection_mode == InspectionMode.tail:
+        df = df.tail(tbl_rows)
+    else:
+        df = df.head(tbl_rows)
+
+    return df.pipe(collect)

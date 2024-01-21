@@ -73,3 +73,38 @@ class TestCli:
         result = runner.invoke(cli, ["inspect", "-i", input_path, "-m", mode])
 
         assert result.exit_code == 0
+
+    @pytest.mark.parametrize(
+        "input_path",
+        [
+            "input_csv_path",
+            "input_parquet_path",
+            "input_xlsx_path",
+        ],
+    )
+    def test_cli_extract(
+        self,
+        input_path: str,
+        tmp_dir_path: Path,
+        request: pytest.FixtureRequest,
+        mode: MetaGenSupportedLoadingModes,
+    ) -> None:
+        input_path = request.getfixturevalue(input_path)
+        runner = CliRunner()
+        outpath: Path = tmp_dir_path / "meta.csv"
+        result = runner.invoke(
+            cli,
+            [
+                "extract",
+                "-i",
+                input_path,
+                "-o",
+                outpath,
+            ],
+        )
+
+        assert result.exit_code == 0
+
+        assert outpath.exists()
+        assert outpath.is_file()
+        assert outpath.stat().st_size > 0

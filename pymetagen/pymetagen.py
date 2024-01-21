@@ -25,7 +25,7 @@ from pymetagen.exceptions import (
     FileTypeUnsupportedError,
     LoadingModeUnsupportedError,
 )
-from pymetagen.utils import collect
+from pymetagen.utils import InspectionMode, collect, extract_data
 
 
 class MetaGen:
@@ -407,7 +407,7 @@ class MetaGen:
             ".csv": self._write_csv_metadata,
             ".xlsx": self._write_excel_metadata,
             ".json": self._write_json_metadata,
-            ".parquet": self.write_parquet_metadata,
+            ".parquet": self._write_parquet_metadata,
         }
 
         try:
@@ -434,10 +434,93 @@ class MetaGen:
         with open(output_path, "w") as f:
             json.dump(json_to_dump, f, indent=4, ensure_ascii=False)
 
-    def write_parquet_metadata(self, output_path: str) -> None:
+    def _write_parquet_metadata(self, output_path: str) -> None:
         # NOTE: @vdiaz having problems due to type mixing in Min Max columns
         metadata = self.compute_metadata()
         metadata.to_parquet(output_path)
+
+    def inspect_data(
+        self,
+        mode: MetaGenSupportedLoadingModes,
+        tbl_rows: int = 10,
+        tbl_cols: int | None = None,
+        fmt_str_lengths: int = 50,
+        inspection_mode: InspectionMode = InspectionMode.head,
+        random_seed: int | None = None,
+        with_replacement: bool = False,
+    ) -> None:
+        """
+        Inspect the data.
+        """
+        tbl_cols = tbl_cols or len(self.data.columns)
+        with pl.Config(
+            fmt_str_lengths=fmt_str_lengths,
+            tbl_cols=tbl_cols,
+            tbl_rows=tbl_rows,
+        ):
+            return self.extract_data(
+                mode=mode,
+                tbl_rows=tbl_rows,
+                inspection_mode=inspection_mode,
+                random_seed=random_seed,
+                with_replacement=with_replacement,
+            ).pipe(print)
+
+    def extract_data(
+        self,
+        mode: MetaGenSupportedLoadingModes,
+        tbl_rows: int = 10,
+        inspection_mode: InspectionMode = InspectionMode.head,
+        random_seed: int | None = None,
+        with_replacement: bool = False,
+        inplace: bool = False,
+    ) -> DataFrameT:
+        """
+        Extract data from a file.
+        """
+        data = extract_data(
+            df=self.data,
+            mode=mode,
+            tbl_rows=tbl_rows,
+            inspection_mode=inspection_mode,
+            random_seed=random_seed,
+            with_replacement=with_replacement,
+        )
+        if inplace:
+            self.data = data
+        return data
+
+    def write_data(self, outpath: str | Path) -> None:
+        outpath = Path(outpath)
+
+        output_type_mapping = {
+            ".csv": self._write_csv_data,
+            ".xlsx": self._write_excel_data,
+            ".json": self._write_json_data,
+            ".parquet": self._write_parquet_data,
+        }
+
+        try:
+            write_metadata = output_type_mapping[outpath.suffix]
+        except KeyError:
+            raise FileTypeUnsupportedError(
+                f"File type {outpath.suffix} not yet implemented. Only"
+                " supported file extensions:"
+                f" {MetaGenSupportedFileExtensions.list()}"
+            )
+        write_metadata(outpath)
+
+    def _write_csv_data(self, output_path: str) -> None:
+        self.data.pipe(collect).write_csv(output_path)
+
+    def _write_excel_data(self, output_path: str) -> None:
+        self.data.pipe(collect).write_excel(output_path, index=False)
+
+    def _write_json_data(self, output_path: str) -> None:
+        self.data.pipe(collect).write_json(output_path, index=False)
+
+    def _write_parquet_data(self, output_path: str) -> None:
+        self.data.pipe(collect).write_parquet(output_path)
 
 
 def json_metadata_to_pandas(path: Path) -> pd.DataFrame:
