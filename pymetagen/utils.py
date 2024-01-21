@@ -81,3 +81,18 @@ def get_nested_parquet_path(base_path: str) -> str:
             return get_nested_parquet_path(new_nested_base_path)
     else:
         return nested_path
+
+
+def inspect_data(
+    df: DataFrameT,
+    tbl_cols: int,
+    tbl_rows: int = 10,
+    fmt_str_lengths: int = 50,
+) -> None:
+    """
+    Inspect a data frame.
+    """
+    with pl.Config(
+        fmt_str_lengths=fmt_str_lengths, tbl_cols=tbl_cols, tbl_rows=tbl_rows
+    ):
+        df.head(tbl_rows).pipe(collect).pipe(print)
