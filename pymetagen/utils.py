@@ -110,7 +110,7 @@ def sample(
         )
         row_indexes = np.random.choice(
             row_depth,
-            size=tbl_rows,
+            size=min(tbl_rows, row_depth),
             replace=with_replacement,
         )
         return (
