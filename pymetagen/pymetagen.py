@@ -441,13 +441,9 @@ class MetaGen:
 
     def inspect_data(
         self,
-        mode: MetaGenSupportedLoadingModes,
         tbl_rows: int = 10,
         tbl_cols: int | None = None,
         fmt_str_lengths: int = 50,
-        inspection_mode: InspectionMode = InspectionMode.head,
-        random_seed: int | None = None,
-        with_replacement: bool = False,
     ) -> None:
         """
         Inspect the data.
@@ -458,13 +454,7 @@ class MetaGen:
             tbl_cols=tbl_cols,
             tbl_rows=tbl_rows,
         ):
-            return self.extract_data(
-                mode=mode,
-                tbl_rows=tbl_rows,
-                inspection_mode=inspection_mode,
-                random_seed=random_seed,
-                with_replacement=with_replacement,
-            ).pipe(print)
+            return self.data.pipe(print)
 
     def extract_data(
         self,
@@ -517,7 +507,14 @@ class MetaGen:
         self.data.pipe(collect).write_excel(output_path, index=False)
 
     def _write_json_data(self, output_path: str) -> None:
-        self.data.pipe(collect).write_json(output_path, index=False)
+        self.data.pipe(collect).to_pandas().to_json(
+            output_path,
+            orient="records",
+            indent=4,
+            force_ascii=False,
+            date_format="iso",
+            date_unit="s",
+        )
 
     def _write_parquet_data(self, output_path: str) -> None:
         self.data.pipe(collect).write_parquet(output_path)

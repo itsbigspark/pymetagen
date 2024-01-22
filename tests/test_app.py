@@ -82,7 +82,7 @@ class TestCli:
             "input_xlsx_path",
         ],
     )
-    def test_cli_extract(
+    def test_cli_inspect_writing(
         self,
         input_path: str,
         tmp_dir_path: Path,
@@ -95,7 +95,7 @@ class TestCli:
         result = runner.invoke(
             cli,
             [
-                "extract",
+                "inspect",
                 "-i",
                 input_path,
                 "-o",
