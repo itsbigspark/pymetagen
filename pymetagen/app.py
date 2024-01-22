@@ -126,9 +126,10 @@ def metadata(
     "--preview",
     type=click.BOOL,
     default=False,
+    is_flag=True,
     help=(
-        "(optional) Opens a Quick Look Preview mode of the file. NOTE: Only"
-        " works for OS operating systems). Defaults to False."
+        "(optional flag) Opens a Quick Look Preview mode of the file. NOTE:"
+        " Only works for OS operating systems). Defaults to False."
     ),
 )
 @click.option(
@@ -163,13 +164,15 @@ def metadata(
     ),
 )
 @click.option(
+    "-wr",
     "--with-replacement",
     type=click.BOOL,
     default=False,
+    is_flag=True,
     required=False,
     help=(
-        "(optional) Allow values to be sampled more than once when the sample"
-        " inspect mode option is activated. Defaults to False."
+        "(optional flag) Allow values to be sampled more than once when the"
+        " sample inspect mode option is activated. Defaults to False."
     ),
 )
 def inspect(
