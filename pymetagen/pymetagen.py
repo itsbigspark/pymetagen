@@ -6,6 +6,7 @@ Python Metadata Generator
 """
 
 import json
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -479,6 +480,20 @@ class MetaGen:
         if inplace:
             self.data = data
         return data
+
+    def quick_look_preview(
+        self,
+        outpath: Path,
+    ) -> None:
+        """
+        Preview a data.
+        """
+        (
+            subprocess.run(
+                ["qlmanage", "-p", outpath],
+                stdout=subprocess.PIPE,
+            )
+        )
 
     def write_data(self, outpath: str | Path) -> None:
         outpath = Path(outpath)

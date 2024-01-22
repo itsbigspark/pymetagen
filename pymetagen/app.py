@@ -1,3 +1,4 @@
+import tempfile
 from pathlib import Path
 
 import click
@@ -121,6 +122,16 @@ def metadata(
     help="(optional) Maximum number of rows to show. Defaults to 10.",
 )
 @click.option(
+    "-P",
+    "--preview",
+    type=click.BOOL,
+    default=False,
+    help=(
+        "(optional) Opens a Quick Look Preview mode of the file. NOTE: Only"
+        " works for OS operating systems). Defaults to False."
+    ),
+)
+@click.option(
     "--fmt-str-lengths",
     type=click.INT,
     default=50,
@@ -166,6 +177,7 @@ def inspect(
     output: Path | None,
     mode: str,
     number_rows: int,
+    preview: bool,
     fmt_str_lengths: int,
     inspection_mode: str,
     random_seed: int,
@@ -185,8 +197,14 @@ def inspect(
         inplace=True,
     )
     if output:
-        click.echo(f"Writing extracts in path: {output}")
+        click.echo(f"Opening Quick Look Preview for file: {input}")
         metagen.write_data(outpath=output)
+    elif preview:
+        click.echo(f"Opening Quick Look Preview for file: {input}")
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            output = Path(tmpdirname) / "extract.csv"
+            metagen.write_data(outpath=output)
+            metagen.quick_look_preview(output)
     else:
         click.echo(f"Inspecting file {input}:")
         metagen.inspect_data(
