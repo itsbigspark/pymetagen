@@ -200,7 +200,7 @@ def inspect(
         inplace=True,
     )
     if output:
-        click.echo(f"Opening Quick Look Preview for file: {input}")
+        click.echo(f"Writing extract in: {output}")
         metagen.write_data(outpath=output)
     elif preview:
         click.echo(f"Opening Quick Look Preview for file: {input}")
