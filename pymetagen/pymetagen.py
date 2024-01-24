@@ -26,7 +26,12 @@ from pymetagen.exceptions import (
     FileTypeUnsupportedError,
     LoadingModeUnsupportedError,
 )
-from pymetagen.utils import InspectionMode, collect, extract_data
+from pymetagen.utils import (
+    CustomEncoder,
+    InspectionMode,
+    collect,
+    extract_data,
+)
 
 
 class MetaGen:
@@ -433,7 +438,13 @@ class MetaGen:
         metadata = self.compute_metadata().to_dict(orient="index")
         json_to_dump = {"fields": metadata}
         with open(output_path, "w") as f:
-            json.dump(json_to_dump, f, indent=4, ensure_ascii=False)
+            json.dump(
+                json_to_dump,
+                f,
+                indent=4,
+                ensure_ascii=False,
+                cls=CustomEncoder,
+            )
 
     def _write_parquet_metadata(self, output_path: str) -> None:
         # NOTE: @vdiaz having problems due to type mixing in Min Max columns

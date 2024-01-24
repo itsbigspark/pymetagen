@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import datetime
+import json
 import os
 from enum import Enum
 from glob import glob
@@ -143,3 +145,16 @@ def extract_data(
         df = df.head(tbl_rows)
 
     return df.pipe(collect)
+
+
+class CustomEncoder(json.JSONEncoder):
+    def default(self, obj: object):
+        if isinstance(obj, set):
+            return list(obj)
+        if isinstance(obj, datetime.datetime | datetime.date | datetime.time):
+            return obj.isoformat()
+        if isinstance(obj, datetime.timedelta):
+            return str(obj)
+        if isinstance(obj, Enum):
+            return str(obj)
+        return json.JSONEncoder.default(self, obj)
