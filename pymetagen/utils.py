@@ -44,7 +44,7 @@ def collect(df: DataFrameT):
         result = df.pipe(collect).method()
     """
     if isinstance(df, pl.LazyFrame):
-        return df.collect()
+        return df.collect(streaming=True)
 
     return df
 
