@@ -4,6 +4,8 @@ from pathlib import Path
 import click
 
 from pymetagen import MetaGen, __version__
+from pymetagen.datatypes import MetaGenSupportedLoadingModes
+from pymetagen.utils import InspectionMode
 
 
 @click.group(
@@ -178,11 +180,11 @@ def metadata(
 def inspect(
     input: Path,
     output: Path | None,
-    mode: str,
+    mode: str | MetaGenSupportedLoadingModes,
     number_rows: int,
     preview: bool,
     fmt_str_lengths: int,
-    inspection_mode: str,
+    inspection_mode: str | InspectionMode,
     random_seed: int,
     with_replacement: bool,
 ) -> None:
@@ -205,7 +207,7 @@ def inspect(
     elif preview:
         click.echo(f"Opening Quick Look Preview for file: {input}")
         with tempfile.TemporaryDirectory() as tmpdirname:
-            output = Path(tmpdirname) / "extract.csv"
+            output = Path(tmpdirname) / f"{input.stem}-extract.csv"
             metagen.write_data(outpath=output)
             metagen.quick_look_preview(output)
     else:
