@@ -146,7 +146,7 @@ def metadata(
 @click.option(
     "-im",
     "--inspection-mode",
-    type=click.Choice(["head", "tail", "sample"], case_sensitive=False),
+    type=click.Choice(["head", "tail", "sample"], case_sensitive=True),
     callback=lambda ctx, param, value: value.lower(),
     default="head",
     required=False,

@@ -143,11 +143,15 @@ def extract_data(
     """
     Extract a data.
     """
+    if inspection_mode not in InspectionMode.list():
+        raise NotImplementedError(
+            f"inspection_mode must be one of {InspectionMode.list()}"
+        )
     if inspection_mode == InspectionMode.sample:
         df = df.pipe(sample, mode, tbl_rows, random_seed, with_replacement)
     elif inspection_mode == InspectionMode.tail:
         df = df.tail(tbl_rows)
-    else:
+    elif inspection_mode == InspectionMode.head:
         df = df.head(tbl_rows)
 
     return df.pipe(collect, False)
