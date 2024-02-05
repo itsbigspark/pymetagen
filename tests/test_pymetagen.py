@@ -11,6 +11,7 @@ from pymetagen.exceptions import (
     FileTypeUnsupportedError,
     LoadingModeUnsupportedError,
 )
+from pymetagen.utils import InspectionMode
 
 input_paths = ["input_csv_path", "input_parquet_path", "input_xlsx_path"]
 
@@ -235,3 +236,31 @@ def test_write_metadata_unsupported_extension(
     metagen = MetaGen(data=pd.DataFrame)
     with pytest.raises(FileTypeUnsupportedError):
         metagen.write_metadata(tmp_dir_path / "test.unsupported")
+
+
+class TestMetaGenExtractData:
+    """Test extract data functionality."""
+
+    @pytest.mark.parametrize(
+        "inspection_mode",
+        InspectionMode.list(),
+    )
+    @pytest.mark.parametrize(
+        "mode",
+        MetaGenSupportedLoadingModes.list(),
+    )
+    def test_extract_data_inspect_mode_head(
+        self,
+        mode: MetaGenSupportedLoadingModes,
+        inspection_mode: InspectionMode,
+    ):
+        metagen = MetaGen.from_path(
+            "tests/data/input_ab_partition.parquet", mode=mode
+        )
+
+        extract = metagen.extract_data(
+            tbl_rows=2, mode=mode, inspection_mode=inspection_mode
+        )
+
+        assert extract.shape[0] == 2
+        assert isinstance(extract, pl.DataFrame)

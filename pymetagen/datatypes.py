@@ -7,6 +7,11 @@ from pymetagen.utils import EnumListMixin
 
 
 class MetaGenSupportedLoadingModes(EnumListMixin, str, Enum):
+    """
+    MetaGen supported loading modes.
+    options: lazy, eager
+    """
+
     LAZY = "lazy"
     EAGER = "eager"
 

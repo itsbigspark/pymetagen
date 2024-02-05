@@ -16,16 +16,21 @@ if TYPE_CHECKING:
     from pymetagen.datatypes import MetaGenSupportedLoadingModes
 
 
-class InspectionMode(str, Enum):
-    head = "head"
-    tail = "tail"
-    sample = "sample"
-
-
 class EnumListMixin:
     @classmethod
     def list(cls) -> list[str]:
         return list(map(lambda c: c.value, cls))
+
+
+class InspectionMode(EnumListMixin, str, Enum):
+    """
+    Inspection mode for data.
+    options: head, tail, sample
+    """
+
+    head = "head"
+    tail = "tail"
+    sample = "sample"
 
 
 def selectively_update_dict(d: dict[str, Any], new_d: dict[str, Any]) -> None:
@@ -48,7 +53,7 @@ def selectively_update_dict(d: dict[str, Any], new_d: dict[str, Any]) -> None:
             d[k] = v
 
 
-def collect(df: DataFrameT):
+def collect(df: DataFrameT, streaming: bool = True) -> DataFrameT:
     """
     Collects a dataframe. If the dataframe is a polars DataFrame, does nothing,
     if it is a polars LazyFrame, collects it.
@@ -57,8 +62,7 @@ def collect(df: DataFrameT):
         result = df.pipe(collect).method()
     """
     if isinstance(df, pl.LazyFrame):
-        return df.collect(streaming=True)
-
+        return df.collect(streaming=streaming)
     return df
 
 
@@ -104,7 +108,9 @@ def sample(
     with_replacement: bool = False,
 ) -> DataFrameT:
     if mode == "eager":
-        return df.sample(n=tbl_rows, with_replacement=with_replacement)
+        return df.sample(
+            n=tbl_rows, with_replacement=with_replacement, seed=random_seed
+        )
     elif mode == "lazy":
         np.random.seed(random_seed)
         row_depth = (
@@ -144,7 +150,7 @@ def extract_data(
     else:
         df = df.head(tbl_rows)
 
-    return df.pipe(collect)
+    return df.pipe(collect, False)
 
 
 class CustomEncoder(json.JSONEncoder):
