@@ -25,6 +25,8 @@ class MetaGenDataType(str, Enum):
     bool = "bool"
     date = "date"
     datetime = "datetime"
+    duration = "duration"
+    time = "time"
     list = "list"
     dict = "dict"
     array = "array"
@@ -84,6 +86,8 @@ class MetaGenDataType(str, Enum):
         Time,
         date,
         datetime,
+        duration,
+        time,
     ]
 
     categorical_data_types: list[MetaGenDataType] = [
@@ -103,6 +107,11 @@ def dtype_to_metagentype(dtype: Any):
         "Int": MetaGenDataType.integer.value,
         "UInt": MetaGenDataType.integer.value,
         "Datetime": MetaGenDataType.datetime.value,
+        "Duration": MetaGenDataType.duration.value,
+        "Time": MetaGenDataType.time.value,
+        "Array": MetaGenDataType.array.value,
+        "List": MetaGenDataType.list.value,
+        "Struct": MetaGenDataType.dict.value,
         "Date": MetaGenDataType.date.value,
         "Categorical": MetaGenDataType.string.value,
         "Boolean": MetaGenDataType.bool.value,

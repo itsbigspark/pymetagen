@@ -245,6 +245,7 @@ class MetaGen:
             .pipe(collect)
             .describe()
             .to_pandas()
+            .convert_dtypes()
             .rename(columns={"describe": "Name"})
             .set_index("Name")
             .T.drop(columns=columns_to_drop)

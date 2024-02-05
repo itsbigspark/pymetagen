@@ -153,6 +153,8 @@ class CustomEncoder(json.JSONEncoder):
             return list(obj)
         if isinstance(obj, datetime.datetime | datetime.date | datetime.time):
             return obj.isoformat()
+        if isinstance(obj, datetime.datetime):
+            return obj.isoformat(serp="T", timespec="seconds")
         if isinstance(obj, datetime.timedelta):
             return str(obj)
         if isinstance(obj, Enum):
