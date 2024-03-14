@@ -231,22 +231,27 @@ class MetaGen:
                 "long_name", ""
             )
 
-        metadata: pd.DataFrame = pd.DataFrame(metadata).replace(np.nan, None)
-        metadata.index.name = "Name"
+        full_metadata: pd.DataFrame = pd.DataFrame(metadata).replace(
+            np.nan, None
+        )
+        full_metadata.index.name = "Name"
 
-        return metadata[pymetagen_columns]
+        return full_metadata[pymetagen_columns]
 
     def _get_simple_metadata(
         self, columns_to_drop: list[str] | None = None
     ) -> dict[str, dict[str, Any]]:
         columns_to_drop = columns_to_drop or []
-        metadata_table = (
+        table = (
             self.data.with_columns(pl.col(pl.Categorical).cast(pl.Utf8))
             .pipe(collect)
             .describe()
             .to_pandas()
             .convert_dtypes()
-            .rename(columns={"describe": "Name"})
+        )
+        description_col = table.columns[0]
+        metadata_table = (
+            table.rename(columns={description_col: "Name"})
             .set_index("Name")
             .T.drop(columns=columns_to_drop)
             .rename(
