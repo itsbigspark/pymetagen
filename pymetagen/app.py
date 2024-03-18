@@ -1,3 +1,11 @@
+"""
+Metagen CLI application.
+========================
+This module contains the CLI application for the metagen package.
+"""
+
+from __future__ import annotations
+
 import tempfile
 from pathlib import Path
 
@@ -219,8 +227,104 @@ def inspect(
         )
 
 
+@click.command(
+    "filter", context_settings={"help_option_names": ["-h", "--help"]}
+)
+@click.option(
+    "-i",
+    "--input",
+    type=click.Path(
+        exists=True,
+        file_okay=True,
+        dir_okay=True,
+        path_type=Path,
+        readable=True,
+    ),
+    required=True,
+    help="Input file path. Can be of type: .csv, .parquet, .xlsx, .json",
+)
+@click.option(
+    "-t",
+    "--table-name",
+    type=click.STRING,
+    required=False,
+    default=None,
+    help="Name of the table to filter. Defaults to the input file name.",
+)
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(
+        file_okay=True, dir_okay=False, path_type=Path, writable=True
+    ),
+    required=False,
+    help="Output file path. Can be of type: .csv, .parquet, .xlsx, .json",
+)
+@click.option(
+    "-q",
+    "--query",
+    required=True,
+    help="SQL query string/file to apply to the data.",
+)
+@click.option(
+    "-m",
+    "--mode",
+    type=click.Choice(["lazy", "eager"], case_sensitive=False),
+    callback=lambda ctx, param, value: value.lower(),
+    default="eager",
+    required=False,
+    help="(optional) Whether to use lazy or eager mode. Defaults to lazy.",
+)
+@click.option(
+    "-e",
+    "--eager",
+    type=click.BOOL,
+    default=True,
+    help="(optional) Whether to use lazy or eager mode. Defaults to lazy.",
+)
+@click.option(
+    "-P",
+    "--preview",
+    type=click.BOOL,
+    default=False,
+    is_flag=True,
+    help=(
+        "(optional flag) Opens a Quick Look Preview mode of the file. NOTE:"
+        " Only works for OS operating systems). Defaults to False."
+    ),
+)
+def filter(
+    input: Path,
+    table_name: str | None,
+    output: Path | None,
+    query: str | Path,
+    mode: MetaGenSupportedLoadingModes,
+    eager: bool,
+    preview: bool,
+) -> None:
+    """
+    A tool to filter a data set.
+    """
+    metagen = MetaGen.from_path(path=input, mode=mode)
+    table_name = table_name or input.stem
+    metagen.filter_data(table_name, query, eager=eager)
+    if output:
+        click.echo(f"Writing filtered data in: {output}")
+        metagen.write_data(outpath=output)
+    elif preview:
+        click.echo(f"Opening Quick Look Preview for file: {input}")
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            output = Path(tmpdirname) / f"{input.stem}-filtered.csv"
+            metagen.write_data(outpath=output)
+            metagen.quick_look_preview(output)
+    else:
+        click.echo("Filtered data:")
+        metagen.inspect_data()
+
+
 cli.add_command(metadata)
 cli.add_command(inspect)
+cli.add_command(filter)
 
 
 if __name__ == "__main__":

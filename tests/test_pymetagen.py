@@ -6,6 +6,7 @@ import polars as pl
 import pytest
 
 from pymetagen import MetaGen, json_metadata_to_pandas
+from pymetagen._typing import DataFrameT
 from pymetagen.datatypes import MetaGenSupportedLoadingModes
 from pymetagen.exceptions import (
     FileTypeUnsupportedError,
@@ -159,6 +160,42 @@ class TestMetadataMethods:
             "no_nulls": [1, 2, 3, 4, 5],
             "mixed": [1, 2, 3, None],
         }
+
+    @pytest.mark.parametrize(
+        ["eager", "return_type"],
+        [[True, pl.DataFrame], [False, pl.LazyFrame]],
+    )
+    def test__filter_by_sql_query(
+        self, df_constructor: Callable, eager: bool, return_type: DataFrameT
+    ):
+        df = pl.DataFrame(
+            data=[
+                ("The Godfather", 1972, 6_000_000, 134_821_952, 9.2),
+                ("The Dark Knight", 2008, 185_000_000, 533_316_061, 9.0),
+                ("Schindler's List", 1993, 22_000_000, 96_067_179, 8.9),
+                ("Pulp Fiction", 1994, 8_000_000, 107_930_000, 8.9),
+                (
+                    "The Shawshank Redemption",
+                    1994,
+                    25_000_000,
+                    28_341_469,
+                    9.3,
+                ),
+            ],
+            schema=["title", "release_year", "budget", "gross", "imdb_score"],
+        )
+
+        metagen = MetaGen(data=df)
+        filtered = metagen._filter_by_sql_query(
+            sql_query="""
+            SELECT title, release_year, imdb_score
+            FROM data
+            WHERE release_year > 1990
+            ORDER BY imdb_score DESC
+            """,
+            eager=eager,
+        )
+        assert isinstance(filtered, return_type)
 
 
 @pytest.mark.parametrize(
