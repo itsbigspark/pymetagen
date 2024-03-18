@@ -66,6 +66,7 @@ class MetaGenDataType(str, Enum):
     Null = "Null"
     Object = "Object"
     Utf8 = "Utf8"
+    String = "String"
     Unknown = "Unknown"
 
     numeric_data_types: list[MetaGenDataType] = [
@@ -100,6 +101,7 @@ class MetaGenDataType(str, Enum):
         Utf8,
         string,
         category,
+        String,
     ]
 
 
@@ -121,6 +123,7 @@ def dtype_to_metagentype(dtype: Any):
         "Categorical": MetaGenDataType.string.value,
         "Boolean": MetaGenDataType.bool.value,
         "Null": MetaGenDataType.null.value,
+        "String": MetaGenDataType.String.value,
     }
 
     for key, value in starts_with_map.items():
