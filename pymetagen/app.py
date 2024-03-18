@@ -244,6 +244,14 @@ def inspect(
     help="Input file path. Can be of type: .csv, .parquet, .xlsx, .json",
 )
 @click.option(
+    "-t",
+    "--table-name",
+    type=click.STRING,
+    required=False,
+    default=None,
+    help="Name of the table to filter. Defaults to the input file name.",
+)
+@click.option(
     "-o",
     "--output",
     type=click.Path(
@@ -287,6 +295,7 @@ def inspect(
 )
 def filter(
     input: Path,
+    table_name: str | None,
     output: Path | None,
     query: str | Path,
     mode: MetaGenSupportedLoadingModes,
@@ -297,7 +306,8 @@ def filter(
     A tool to filter a data set.
     """
     metagen = MetaGen.from_path(path=input, mode=mode)
-    metagen.filter_data(query, eager=eager)
+    table_name = table_name or input.stem
+    metagen.filter_data(table_name, query, eager=eager)
     if output:
         click.echo(f"Writing filtered data in: {output}")
         metagen.write_data(outpath=output)

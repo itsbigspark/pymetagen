@@ -513,7 +513,7 @@ class MetaGen:
         )
 
     def _filter_by_sql_query(
-        self, sql_query: str, eager: bool = True
+        self, sql_query: str, eager: bool = True, table_name: str = "data"
     ) -> DataFrameT:
         """
         Filter data by a SQL query.
@@ -523,16 +523,18 @@ class MetaGen:
             eager: If True, the data will be loaded into memory before
                 filtering. If False, the data will be filtered lazily.
         """
-        sql = pl.SQLContext(films=self.data.pipe(collect))
+        sql = pl.SQLContext()
+        sql.register(table_name, self.data)
         return sql.execute(sql_query, eager=eager)
 
     def filter_data(
-        self, sql_query: Path | str, eager: bool = True
-    ) -> DataFrameT:
+        self, table_name: str, sql_query: Path | str, eager: bool = True
+    ):
         """
-        Filter data by a SQL query.
+        Filter the data attribute by a SQL query.
 
         Args:
+            table_name: Name of the table to filter.
             sql_query: SQL query to filter data by. If a Path is provided, the
                        file will be read and the contents will be used as the SQL
             eager: If True, the data will be loaded into memory before
@@ -543,7 +545,9 @@ class MetaGen:
             sql_query = sql_query.read_text()
         else:
             sql_query = str(sql_query)
-        return self._filter_by_sql_query(sql_query, eager=eager)
+        self.data = self._filter_by_sql_query(
+            sql_query, eager=eager, table_name=table_name
+        )
 
     def write_data(self, outpath: str | Path) -> None:
         outpath = Path(outpath)
