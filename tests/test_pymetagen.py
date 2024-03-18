@@ -6,14 +6,13 @@ import polars as pl
 import pytest
 
 from pymetagen import MetaGen, json_metadata_to_pandas
+from pymetagen._typing import DataFrameT
 from pymetagen.datatypes import MetaGenSupportedLoadingModes
 from pymetagen.exceptions import (
     FileTypeUnsupportedError,
     LoadingModeUnsupportedError,
 )
 from pymetagen.utils import InspectionMode
-from pymetagen._typing import DataFrameT
-from tests.conftest import eager_data
 
 input_paths = ["input_csv_path", "input_parquet_path", "input_xlsx_path"]
 
