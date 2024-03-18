@@ -512,6 +512,39 @@ class MetaGen:
             )
         )
 
+    def _filter_by_sql_query(
+        self, sql_query: str, eager: bool = True
+    ) -> DataFrameT:
+        """
+        Filter data by a SQL query.
+
+        Args:
+            sql_query: SQL query to filter data by.
+            eager: If True, the data will be loaded into memory before
+                filtering. If False, the data will be filtered lazily.
+        """
+        sql = pl.SQLContext(films=self.data.pipe(collect))
+        return sql.execute(sql_query, eager=eager)
+
+    def filter_data(
+        self, sql_query: Path | str, eager: bool = True
+    ) -> DataFrameT:
+        """
+        Filter data by a SQL query.
+
+        Args:
+            sql_query: SQL query to filter data by. If a Path is provided, the
+                       file will be read and the contents will be used as the SQL
+            eager: If True, the data will be loaded into memory before
+                filtering. If False, the data will be filtered lazily.
+        """
+        sql_query = Path(sql_query)
+        if sql_query.is_file():
+            sql_query = sql_query.read_text()
+        else:
+            sql_query = str(sql_query)
+        return self._filter_by_sql_query(sql_query, eager=eager)
+
     def write_data(self, outpath: str | Path) -> None:
         outpath = Path(outpath)
 
@@ -532,13 +565,13 @@ class MetaGen:
             )
         write_metadata(outpath)
 
-    def _write_csv_data(self, output_path: str) -> None:
+    def _write_csv_data(self, output_path: Path | str) -> None:
         self.data.pipe(collect).write_csv(output_path)
 
-    def _write_excel_data(self, output_path: str) -> None:
+    def _write_excel_data(self, output_path: Path | str) -> None:
         self.data.pipe(collect).write_excel(output_path, index=False)
 
-    def _write_json_data(self, output_path: str) -> None:
+    def _write_json_data(self, output_path: Path | str) -> None:
         self.data.pipe(collect).to_pandas().to_json(
             output_path,
             orient="records",
@@ -548,12 +581,12 @@ class MetaGen:
             date_unit="s",
         )
 
-    def _write_parquet_data(self, output_path: str) -> None:
+    def _write_parquet_data(self, output_path: Path | str) -> None:
         self.data.pipe(collect).write_parquet(output_path)
 
 
-def json_metadata_to_pandas(path: Path) -> pd.DataFrame:
-    with path.open() as f:
+def json_metadata_to_pandas(path: Path | str) -> pd.DataFrame:
+    with open(path) as f:
         metadata = json.load(f)
     metadata = metadata["fields"]
     return pd.DataFrame.from_dict(metadata, orient="index")

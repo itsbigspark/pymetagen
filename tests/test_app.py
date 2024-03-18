@@ -108,3 +108,45 @@ class TestCli:
         assert outpath.exists()
         assert outpath.is_file()
         assert outpath.stat().st_size > 0
+
+    @pytest.mark.parametrize(
+        ["sql_query"],
+        [
+            [
+                """SELECT title, release_year, imdb_score
+                FROM films
+                WHERE release_year > 1990
+                ORDER BY imdb_score DESC
+                """
+            ],
+            ["tests/data/filter_query.sql"],
+        ],
+    )
+    def test_cli_filter_by_sql_query(
+        self,
+        tmp_dir_path: Path,
+        mode: MetaGenSupportedLoadingModes,
+        sql_query: str,
+    ) -> None:
+        runner = CliRunner()
+        outpath: Path = tmp_dir_path / "testdata.csv"
+        result = runner.invoke(
+            cli,
+            [
+                "filter",
+                "-i",
+                "tests/data/testdata.csv",
+                "-o",
+                outpath,
+                "--mode",
+                mode,
+                "-q",
+                sql_query,
+            ],
+        )
+
+        assert result.exit_code == 0
+
+        assert outpath.exists()
+        assert outpath.is_file()
+        assert outpath.stat().st_size > 0
