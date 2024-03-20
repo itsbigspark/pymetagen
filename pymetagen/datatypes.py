@@ -123,7 +123,7 @@ def dtype_to_metagentype(dtype: Any):
         "Categorical": MetaGenDataType.string.value,
         "Boolean": MetaGenDataType.bool.value,
         "Null": MetaGenDataType.null.value,
-        "String": MetaGenDataType.String.value,
+        "String": MetaGenDataType.string.value,
     }
 
     for key, value in starts_with_map.items():
