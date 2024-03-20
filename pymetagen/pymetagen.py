@@ -235,7 +235,6 @@ class MetaGen:
             np.nan, None
         )
         full_metadata.index.name = "Name"
-
         return full_metadata[pymetagen_columns]
 
     def _get_simple_metadata(
@@ -263,7 +262,7 @@ class MetaGen:
                     "std": "Std",
                 }
             )
-            .astype({"# nulls": int})
+            .astype({"# nulls": int, "Min": str, "Max": str})
             .to_dict()
         )
 
