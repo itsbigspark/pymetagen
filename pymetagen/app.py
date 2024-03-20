@@ -33,7 +33,6 @@ def cli():
     "-i",
     "--input",
     type=click.Path(
-        exists=True,
         file_okay=True,
         dir_okay=True,
         path_type=Path,
@@ -96,7 +95,6 @@ def metadata(
     "-i",
     "--input",
     type=click.Path(
-        exists=True,
         file_okay=True,
         dir_okay=True,
         path_type=Path,
@@ -234,7 +232,6 @@ def inspect(
     "-i",
     "--input",
     type=click.Path(
-        exists=True,
         file_okay=True,
         dir_okay=True,
         path_type=Path,
@@ -314,7 +311,8 @@ def filter(
     elif preview:
         click.echo(f"Opening Quick Look Preview for file: {input}")
         with tempfile.TemporaryDirectory() as tmpdirname:
-            output = Path(tmpdirname) / f"{input.stem}-filtered.csv"
+            stem = input.stem.replace("*", "concatenation")
+            output = Path(tmpdirname) / f"{stem}-filtered.csv"
             metagen.write_data(outpath=output)
             metagen.quick_look_preview(output)
     else:
