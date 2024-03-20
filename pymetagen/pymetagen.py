@@ -235,9 +235,6 @@ class MetaGen:
             np.nan, None
         )
         full_metadata.index.name = "Name"
-        # convert Min and Max to string to avoid issues with mixed types
-        full_metadata["Min"] = full_metadata["Min"].astype(str)
-        full_metadata["Max"] = full_metadata["Max"].astype(str)
         return full_metadata[pymetagen_columns]
 
     def _get_simple_metadata(
@@ -265,7 +262,7 @@ class MetaGen:
                     "std": "Std",
                 }
             )
-            .astype({"# nulls": int})
+            .astype({"# nulls": int, "Min": str, "Max": str})
             .to_dict()
         )
 
