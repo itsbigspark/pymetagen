@@ -1,0 +1,4 @@
+column_name,description,long_name
+a,"The field labelled a",aaaaaaaaaaaaaaa
+b,"The field labelled b",bbbbbb
+c,"The field labelled c","ccccccccccccccccccccc"
