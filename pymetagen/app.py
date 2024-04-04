@@ -75,8 +75,23 @@ def cli():
     required=False,
     help="(optional) Whether to use lazy or eager mode. Defaults to eager.",
 )
+@click.option(
+    "-fmt",
+    "--formats",
+    type=click.STRING,
+    required=False,
+    default=None,
+    help=(
+        "Output file formats. Can be of type: .csv, .parquet, .xlsx, .json or "
+        "combinations of them, separated by commas, e.g '.csv,.parquet,.json'."
+    ),
+)
 def metadata(
-    input: Path, output: Path, descriptions: Path | None, mode: str
+    input: Path,
+    output: Path,
+    descriptions: Path | None,
+    mode: str,
+    formats: str | None,
 ) -> None:
     """
     A tool to generate metadata for tabular data.
@@ -85,7 +100,17 @@ def metadata(
     metagen = MetaGen.from_path(
         path=input, descriptions_path=descriptions, mode=mode
     )
-    metagen.write_metadata(outpath=output)
+    metadata_by_output_format = metagen.metadata_by_output_format()
+    if formats:
+        splitted_formats = formats.split(",")
+        for output_format in splitted_formats:
+            outpath = output.with_suffix(output_format)
+            metagen.write_metadata(
+                outpath=outpath,
+                metadata=metadata_by_output_format[output_format],
+            )
+    else:
+        metagen.write_metadata(outpath=output)
 
 
 @click.command(
@@ -226,6 +251,138 @@ def inspect(
 
 
 @click.command(
+    "extracts", context_settings={"help_option_names": ["-h", "--help"]}
+)
+@click.option(
+    "-i",
+    "--input",
+    type=click.Path(
+        file_okay=True,
+        dir_okay=True,
+        path_type=Path,
+        readable=True,
+    ),
+    required=True,
+    help="Input file path. Can be of type: .csv, .parquet, .xlsx, .json",
+)
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(
+        file_okay=True, dir_okay=False, path_type=Path, writable=True
+    ),
+    required=True,
+    default=None,
+    help="Output file path. Can be of type: .csv, .parquet, .xlsx, .json",
+)
+@click.option(
+    "-m",
+    "--mode",
+    type=click.Choice(["lazy", "eager"], case_sensitive=False),
+    callback=lambda ctx, param, value: value.lower(),
+    default="lazy",
+    required=False,
+    help="(optional) Whether to use lazy or eager mode. Defaults to lazy.",
+)
+@click.option(
+    "-n",
+    "--number-rows",
+    type=click.INT,
+    default=10,
+    help="(optional) Maximum number of rows to show. Defaults to 10.",
+)
+@click.option(
+    "--random-seed",
+    type=click.INT,
+    default=None,
+    required=False,
+    help=(
+        "(optional) Seed for the random number generator when the sample"
+        " inspect mode option is activated. Defaults to None."
+    ),
+)
+@click.option(
+    "-wr",
+    "--with-replacement",
+    type=click.BOOL,
+    default=False,
+    is_flag=True,
+    required=False,
+    help=(
+        "(optional flag) Allow values to be sampled more than once when the"
+        " sample inspect mode option is activated. Defaults to False."
+    ),
+)
+@click.option(
+    "-fmt",
+    "--formats",
+    type=click.STRING,
+    required=False,
+    default=None,
+    help=(
+        "Output file formats. Can be of type: .csv, .parquet, .xlsx, .json or "
+        "combinations of them, separated by commas, e.g '.csv,.parquet,.json'."
+    ),
+)
+@click.option(
+    "-ignore_im",
+    "--ignore_inspection_modes",
+    type=click.STRING,
+    required=False,
+    default=None,
+    help=(
+        "Comma-separated list of inspection modes to ignore. Can be of type:"
+        " head, tail, sample. Defaults to None."
+    ),
+)
+def extracts(
+    input: Path,
+    output: Path,
+    mode: str | MetaGenSupportedLoadingModes,
+    number_rows: int,
+    random_seed: int,
+    with_replacement: bool,
+    formats: str | None,
+    ignore_inspection_modes: str | None,
+) -> None:
+    """
+    A tool to extract n number of rows from a data set. It can extract
+    head, tail, random sample at the same time.
+    """
+    metagen = MetaGen.from_path(path=input, mode=mode)
+    ignore_insp_modes = (
+        ignore_inspection_modes.split(",")
+        if ignore_inspection_modes is not None
+        else []
+    )
+    inspection_modes = [
+        im for im in InspectionMode.list() if im not in ignore_insp_modes
+    ]
+
+    for im in inspection_modes:
+        data = metagen.extract_data(
+            mode=mode,
+            tbl_rows=number_rows,
+            inspection_mode=im,
+            random_seed=random_seed,
+            with_replacement=with_replacement,
+        )
+        if formats:
+            splitted_formats = formats.split(",")
+            for output_format in splitted_formats:
+                out_path = output.with_suffix(output_format)
+                outpath = out_path.with_name(
+                    f"{out_path.stem}-{im}{out_path.suffix}"
+                )
+                click.echo(f"Writing extract in: {output}")
+                metagen.write_data(outpath=outpath, data=data)
+        else:
+            outpath = output.with_name(f"{output.stem}-{im}{output.suffix}")
+            click.echo(f"Writing extract in: {outpath}")
+            metagen.write_data(outpath=outpath, data=data)
+
+
+@click.command(
     "filter", context_settings={"help_option_names": ["-h", "--help"]}
 )
 @click.option(
@@ -322,6 +479,7 @@ def filter(
 
 cli.add_command(metadata)
 cli.add_command(inspect)
+cli.add_command(extracts)
 cli.add_command(filter)
 
 

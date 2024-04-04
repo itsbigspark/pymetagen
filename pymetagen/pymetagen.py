@@ -8,13 +8,12 @@ Python Metadata Generator
 import json
 import subprocess
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 import pandas as pd
 import polars as pl
 
-from pymetagen._typing import DataFrameT
+from pymetagen._typing import Any, DataFrameT, Hashable
 from pymetagen.dataloader import DataLoader, LazyDataLoader
 from pymetagen.datatypes import (
     MetaGenDataType,
@@ -237,9 +236,20 @@ class MetaGen:
         full_metadata.index.name = "Name"
         return full_metadata[pymetagen_columns]
 
+    def metadata_by_output_format(
+        self,
+    ) -> dict[str, pd.DataFrame | dict[Hashable, Any]]:
+        metadata = self.compute_metadata()
+        return {
+            ".parquet": metadata,
+            ".csv": metadata.reset_index(),
+            ".xlsx": metadata.reset_index(),
+            ".json": metadata.to_dict(orient="index"),
+        }
+
     def _get_simple_metadata(
         self, columns_to_drop: list[str] | None = None
-    ) -> dict[str, dict[str, Any]]:
+    ) -> dict[Hashable, Any]:
         columns_to_drop = columns_to_drop or []
         table = (
             self.data.with_columns(pl.col(pl.Categorical).cast(pl.Utf8))
@@ -266,7 +276,7 @@ class MetaGen:
             .to_dict()
         )
 
-        types_ = {}
+        types_: dict[Hashable, str] = {}
         for col, type_ in zip(self.data.columns, self.data.dtypes):
             types_[col] = dtype_to_metagentype(type_)
         metadata_table["Type"] = types_
@@ -403,7 +413,11 @@ class MetaGen:
         }
         return unique_values
 
-    def write_metadata(self, outpath: str | Path) -> None:
+    def write_metadata(
+        self,
+        outpath: str | Path,
+        metadata: pd.DataFrame | dict[Hashable, Any] | None = None,
+    ) -> None:
         """
         Write metadata to a file.
 
@@ -411,6 +425,9 @@ class MetaGen:
             outpath: Path to write metadata to. File extension determines
                 output format. Supported file extensions can be found in
                 :class:`pymetagen.datatypes.MetaGenSupportedFileExtensions`.
+            metadata: Metadata to write. If a DataFrame is provided, it will be
+                written as is. If a dictionary is provided, it will be written
+                as a JSON file.
         """
         outpath = Path(outpath)
 
@@ -429,18 +446,24 @@ class MetaGen:
                 " supported file extensions:"
                 f" {MetaGenSupportedFileExtensions.list()}"
             )
-        write_metadata(outpath)
+        write_metadata(outpath, metadata)
 
-    def _write_excel_metadata(self, output_path: str) -> None:
-        metadata = self.compute_metadata().reset_index()
+    def _write_excel_metadata(
+        self, output_path: str, metadata: pd.DataFrame | None
+    ) -> None:
+        metadata = metadata or self.compute_metadata().reset_index()
         metadata.to_excel(output_path, sheet_name="Fields", index=False)
 
-    def _write_csv_metadata(self, output_path: str) -> None:
-        metadata = self.compute_metadata().reset_index()
+    def _write_csv_metadata(
+        self, output_path: str, metadata: pd.DataFrame | None
+    ) -> None:
+        metadata = metadata or self.compute_metadata().reset_index()
         metadata.to_csv(output_path, index=False)
 
-    def _write_json_metadata(self, output_path: str) -> None:
-        metadata = self.compute_metadata().to_dict(orient="index")
+    def _write_json_metadata(
+        self, output_path: str, metadata: dict[Hashable, Any] | None
+    ) -> None:
+        metadata = metadata or self.compute_metadata().to_dict(orient="index")
         json_to_dump = {"fields": metadata}
         with open(output_path, "w") as f:
             json.dump(
@@ -451,9 +474,10 @@ class MetaGen:
                 cls=CustomEncoder,
             )
 
-    def _write_parquet_metadata(self, output_path: str) -> None:
-        # NOTE: @vdiaz having problems due to type mixing in Min Max columns
-        metadata = self.compute_metadata()
+    def _write_parquet_metadata(
+        self, output_path: str, metadata: pd.DataFrame | None
+    ) -> None:
+        metadata = metadata or self.compute_metadata()
         metadata.to_parquet(output_path)
 
     def inspect_data(
@@ -548,7 +572,9 @@ class MetaGen:
             sql_query, eager=eager, table_name=table_name
         )
 
-    def write_data(self, outpath: str | Path) -> None:
+    def write_data(
+        self, outpath: str | Path, data: DataFrameT | None = None
+    ) -> None:
         outpath = Path(outpath)
 
         output_type_mapping = {
@@ -566,16 +592,25 @@ class MetaGen:
                 " supported file extensions:"
                 f" {MetaGenSupportedFileExtensions.list()}"
             )
-        write_metadata(outpath)
+        write_metadata(outpath, data)
 
-    def _write_csv_data(self, output_path: Path | str) -> None:
-        self.data.pipe(collect).write_csv(output_path)
+    def _write_csv_data(
+        self, output_path: Path | str, data: DataFrameT | None
+    ) -> None:
+        data = data if data is not None else self.data
+        data.pipe(collect).write_csv(output_path)
 
-    def _write_excel_data(self, output_path: Path | str) -> None:
-        self.data.pipe(collect).write_excel(output_path, index=False)
+    def _write_excel_data(
+        self, output_path: Path | str, data: DataFrameT | None
+    ) -> None:
+        data = data if data is not None else self.data
+        data.pipe(collect).write_excel(output_path, index=False)
 
-    def _write_json_data(self, output_path: Path | str) -> None:
-        self.data.pipe(collect).to_pandas().to_json(
+    def _write_json_data(
+        self, output_path: Path | str, data: DataFrameT | None
+    ) -> None:
+        data = data if data is not None else self.data
+        data.pipe(collect).to_pandas().to_json(
             output_path,
             orient="records",
             indent=4,
@@ -584,8 +619,11 @@ class MetaGen:
             date_unit="s",
         )
 
-    def _write_parquet_data(self, output_path: Path | str) -> None:
-        self.data.pipe(collect).write_parquet(output_path)
+    def _write_parquet_data(
+        self, output_path: Path | str, data: DataFrameT | None
+    ) -> None:
+        data = data if data is not None else self.data
+        data.pipe(collect).write_parquet(output_path)
 
 
 def json_metadata_to_pandas(path: Path | str) -> pd.DataFrame:

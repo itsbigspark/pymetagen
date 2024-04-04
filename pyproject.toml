@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pymetagen"
-version = "0.2.0"
+version = "0.2.1"
 description = "Metadata generator using polars as backend."
 authors = ["Smart Data Foundy <info@smartdatafoundry.com>"]
 readme = "README.md"
