@@ -1,5 +1,7 @@
-from typing import TypeAlias
+import typing
 
 import polars as pl
 
-DataFrameT: TypeAlias = pl.DataFrame | pl.LazyFrame
+DataFrameT: typing.TypeAlias = pl.DataFrame | pl.LazyFrame
+Any = typing.Any
+Hashable = typing.Hashable

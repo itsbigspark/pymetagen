@@ -4,6 +4,7 @@ from click.testing import CliRunner
 
 from pymetagen.app import cli
 from pymetagen.datatypes import MetaGenSupportedLoadingModes
+from pymetagen.utils import InspectionMode
 
 
 @pytest.mark.parametrize(
@@ -93,6 +94,51 @@ class TestCli:
         assert outpath.exists()
         assert outpath.is_file()
         assert outpath.stat().st_size > 0
+
+    @pytest.mark.parametrize(
+        "input_path",
+        [
+            "input_csv_path",
+            "input_parquet_path",
+            "input_xlsx_path",
+        ],
+    )
+    def test_cli_extracts_writing(
+        self,
+        input_path: str,
+        tmp_dir_path: Path,
+        request: pytest.FixtureRequest,
+        mode: MetaGenSupportedLoadingModes,
+    ) -> None:
+        input_path = request.getfixturevalue(input_path)
+        runner = CliRunner()
+        outpath: Path = tmp_dir_path / "trial.csv"
+        result = runner.invoke(
+            cli,
+            [
+                "extracts",
+                "-i",
+                input_path,
+                "-o",
+                outpath,
+            ],
+        )
+
+        assert result.exit_code == 0
+
+        for im in InspectionMode.list():
+            assert outpath.with_name(
+                f"{outpath.stem}-{im}{outpath.suffix}"
+            ).exists()
+            assert outpath.with_name(
+                f"{outpath.stem}-{im}{outpath.suffix}"
+            ).is_file()
+            assert (
+                outpath.with_name(f"{outpath.stem}-{im}{outpath.suffix}")
+                .stat()
+                .st_size
+                > 0
+            )
 
     @pytest.mark.parametrize(
         ["sql_query"],
