@@ -1,6 +1,6 @@
 from importlib.metadata import version
 
-from pymetagen.pymetagen import *  # noqa: F403
+from pymetagen.metagen import *  # noqa: F403
 
 __version__ = version("pymetagen")
 
