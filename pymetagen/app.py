@@ -76,8 +76,8 @@ def cli():
     help="(optional) Whether to use lazy or eager mode. Defaults to eager.",
 )
 @click.option(
-    "-fmt",
-    "--formats",
+    "-xfmt",
+    "--extra_formats",
     type=click.STRING,
     required=False,
     default=None,
@@ -91,7 +91,7 @@ def metadata(
     output: Path,
     descriptions: Path | None,
     mode: str,
-    formats: str | None,
+    extra_formats: str | None,
 ) -> None:
     """
     A tool to generate metadata for tabular data.
@@ -101,8 +101,10 @@ def metadata(
         path=input, descriptions_path=descriptions, mode=mode
     )
     metadata_by_output_format = metagen.metadata_by_output_format()
-    if formats:
-        splitted_formats = formats.split(",")
+    if extra_formats:
+        splitted_formats = extra_formats.split(",")
+        if output.suffix not in splitted_formats:
+            splitted_formats.append(output.suffix)
         for output_format in splitted_formats:
             outpath = output.with_suffix(output_format)
             metagen.write_metadata(
@@ -314,8 +316,8 @@ def inspect(
     ),
 )
 @click.option(
-    "-fmt",
-    "--formats",
+    "-xfmt",
+    "--extra_formats",
     type=click.STRING,
     required=False,
     default=None,
@@ -342,7 +344,7 @@ def extracts(
     number_rows: int,
     random_seed: int,
     with_replacement: bool,
-    formats: str | None,
+    extra_formats: str | None,
     ignore_inspection_modes: str | None,
 ) -> None:
     """
@@ -367,8 +369,10 @@ def extracts(
             random_seed=random_seed,
             with_replacement=with_replacement,
         )
-        if formats:
-            splitted_formats = formats.split(",")
+        if extra_formats:
+            splitted_formats = extra_formats.split(",")
+            if output.suffix not in splitted_formats:
+                splitted_formats.append(output.suffix)
             for output_format in splitted_formats:
                 out_path = output.with_suffix(output_format)
                 outpath = out_path.with_name(
