@@ -451,19 +451,31 @@ class MetaGen:
     def _write_excel_metadata(
         self, output_path: str, metadata: pd.DataFrame | None
     ) -> None:
-        metadata = metadata or self.compute_metadata().reset_index()
+        metadata = (
+            metadata
+            if metadata is not None
+            else self.compute_metadata().reset_index()
+        )
         metadata.to_excel(output_path, sheet_name="Fields", index=False)
 
     def _write_csv_metadata(
         self, output_path: str, metadata: pd.DataFrame | None
     ) -> None:
-        metadata = metadata or self.compute_metadata().reset_index()
+        metadata = (
+            metadata
+            if metadata is not None
+            else self.compute_metadata().reset_index()
+        )
         metadata.to_csv(output_path, index=False)
 
     def _write_json_metadata(
         self, output_path: str, metadata: dict[Hashable, Any] | None
     ) -> None:
-        metadata = metadata or self.compute_metadata().to_dict(orient="index")
+        metadata = (
+            metadata
+            if metadata is not None
+            else self.compute_metadata().to_dict(orient="index")
+        )
         json_to_dump = {"fields": metadata}
         with open(output_path, "w") as f:
             json.dump(
@@ -477,7 +489,9 @@ class MetaGen:
     def _write_parquet_metadata(
         self, output_path: str, metadata: pd.DataFrame | None
     ) -> None:
-        metadata = metadata or self.compute_metadata()
+        metadata = (
+            metadata if metadata is not None else self.compute_metadata()
+        )
         metadata.to_parquet(output_path)
 
     def inspect_data(
