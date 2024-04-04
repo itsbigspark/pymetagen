@@ -149,7 +149,7 @@ def metadata(
 )
 @click.option(
     "-n",
-    "--number-rows",
+    "--number_rows",
     type=click.INT,
     default=10,
     help="(optional) Maximum number of rows to show. Defaults to 10.",
@@ -286,7 +286,7 @@ def inspect(
 )
 @click.option(
     "-n",
-    "--number-rows",
+    "--number_rows",
     type=click.INT,
     default=10,
     help="(optional) Maximum number of rows to show. Defaults to 10.",
