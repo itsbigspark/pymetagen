@@ -54,12 +54,10 @@ class TestMetaGen:
     @pytest.mark.parametrize(
         "extension, read_metadata",
         [
-            ["csv", lambda x: pd.read_csv(x).set_index("Name")],
+            ["csv", lambda x: pd.read_csv(x)],
             [
                 "xlsx",
-                lambda x: pd.read_excel(x, engine="openpyxl").set_index(
-                    "Name"
-                ),
+                lambda x: pd.read_excel(x, engine="openpyxl"),
             ],
             ["json", json_metadata_to_pandas],
             ["parquet", pd.read_parquet],
@@ -81,11 +79,15 @@ class TestMetaGen:
 
         assert outpath.exists()
         assert outpath.is_file()
-
+        pd.DataFrame().reset_index()
         outdata = read_metadata(outpath)
+
+        if extension == "json":
+            outdata.reset_index(names=["Name"], inplace=True)
 
         assert len(outdata) == len(data.columns)
         assert list(outdata.columns) == [
+            "Name",
             "Long Name",
             "Type",
             "Description",

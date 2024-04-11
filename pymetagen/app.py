@@ -5,11 +5,16 @@ This module contains the CLI application for the metagen package.
 """
 
 from __future__ import annotations
+from pprint import pprint
 
+import click
+from numpy import require
+import polars as pl
 import tempfile
 from pathlib import Path
 
-import click
+from traitlets import default
+
 
 from pymetagen import MetaGen, __version__
 from pymetagen.datatypes import MetaGenSupportedLoadingModes
@@ -47,7 +52,7 @@ def cli():
     type=click.Path(
         file_okay=True, dir_okay=False, path_type=Path, writable=True
     ),
-    required=True,
+    default=None,
     help="Output file path. Can be of type: .csv, .parquet, .xlsx, .json",
 )
 @click.option(
@@ -86,22 +91,71 @@ def cli():
         "combinations of them, separated by commas, e.g '.csv,.parquet,.json'."
     ),
 )
+@click.option(
+    "-shw_desc",
+    "--show-descriptions",
+    type=click.BOOL,
+    default=False,
+    is_flag=True,
+    help=(
+        "(optional flag) Show columns descriptions printed in the console. "
+        "Can be of type: True or False. Defaults to False."
+    ),
+)
+@click.option(
+    "-P",
+    "--preview",
+    type=click.BOOL,
+    default=False,
+    is_flag=True,
+    help=(
+        "(optional flag) Opens a Quick Look Preview mode of the file. NOTE:"
+        " Only works for OS operating systems). Defaults to False."
+    ),
+)
+@click.option(
+    "-warn_desc",
+    "--warning_description",
+    type=click.BOOL,
+    default=False,
+    is_flag=True,
+    help=("(optional flag) Show columns with no descriptions"),
+)
 def metadata(
     input: Path,
-    output: Path,
+    output: Path | None,
     descriptions: Path | None,
     mode: str,
     extra_formats: str | None,
+    show_descriptions: bool,
+    preview: bool,
+    warning_description: bool,
 ) -> None:
     """
     A tool to generate metadata for tabular data.
     """
     click.echo(f"Generating metadata for {input}...")
     metagen = MetaGen.from_path(
-        path=input, descriptions_path=descriptions, mode=mode
+        path=input,
+        descriptions_path=descriptions,
+        mode=mode,
+        compute_metadata=True,
     )
     metadata_by_output_format = metagen.metadata_by_output_format()
-    if extra_formats:
+    if preview:
+        click.echo(f"Opening Quick Look Preview for file: {input}")
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            output = Path(tmpdirname) / f"{input.stem}-extract.csv"
+            metagen.write_metadata(outpath=output)
+            metagen.quick_look_preview(output)
+    elif output is None:
+        click.echo("Metadata:")
+        metagen.inspect_data(
+            data=metagen._polars_metadata,
+            tbl_cols=200,
+            tbl_rows=200,
+        )
+    elif extra_formats:
         splitted_formats = extra_formats.split(",")
         if output.suffix not in splitted_formats:
             splitted_formats.append(output.suffix)
@@ -113,6 +167,21 @@ def metadata(
             )
     else:
         metagen.write_metadata(outpath=output)
+
+    if show_descriptions:
+        click.echo("Column descriptions:")
+        pprint(
+            metagen._metadata[["Name", "Description"]]
+            .set_index("Name")
+            .to_dict()["Description"]
+        )
+    if warning_description:
+        click.echo("Column without Descriptions:")
+        click.echo(
+            metagen._metadata[
+                metagen._metadata["Description"] == ""
+            ].Name.to_list()
+        )
 
 
 @click.command(

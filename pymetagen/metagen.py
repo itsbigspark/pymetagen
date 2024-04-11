@@ -5,6 +5,7 @@ PyMetaGen
 Python Metadata Generator
 """
 
+from functools import cached_property
 import json
 import subprocess
 from pathlib import Path
@@ -45,15 +46,19 @@ class MetaGen:
                     "description": "A description of the column",
                     "long_name": "A long name for the column",
                 }
+        compute_metadata: Flag for computing metadata on instantiation
     """
 
     def __init__(
         self,
         data: DataFrameT,
         descriptions: dict[str, dict[str, str]] | None = None,
+        compute_metadata: bool = False,
     ):
         self.data = data
         self.descriptions = descriptions or {}
+        if compute_metadata:
+            self._metadata
 
     @classmethod
     def from_path(
@@ -61,6 +66,7 @@ class MetaGen:
         path: Path,
         descriptions_path: Path | None = None,
         mode: MetaGenSupportedLoadingModes = MetaGenSupportedLoadingModes.EAGER,
+        compute_metadata: bool = False,
     ) -> "MetaGen":
         """
         Generate metadata from a file.
@@ -92,6 +98,7 @@ class MetaGen:
 
             mode: Loading mode to use. See :class:`pymetagen.datatypes.MetaGenSupportedLoadingModes` for supported
                 modes.
+            compute_metadata: Flag for computing metadata on instantiation.
         """
         mode_mapping = {
             MetaGenSupportedLoadingModes.LAZY: LazyDataLoader,
@@ -120,7 +127,16 @@ class MetaGen:
         return cls(
             data=data,
             descriptions=descriptions,
+            compute_metadata=compute_metadata,
         )
+
+    @cached_property
+    def _metadata(self):
+        return self.compute_metadata().reset_index()
+
+    @property
+    def _polars_metadata(self):
+        return pl.from_pandas(self._metadata)
 
     @staticmethod
     def _load_descriptions_from_json(path: Path) -> dict[str, dict[str, str]]:
@@ -451,32 +467,25 @@ class MetaGen:
     def _write_excel_metadata(
         self, output_path: str, metadata: pd.DataFrame | None
     ) -> None:
-        metadata = (
-            metadata
-            if metadata is not None
-            else self.compute_metadata().reset_index()
-        )
+        metadata = metadata if metadata is not None else self._metadata
         metadata.to_excel(output_path, sheet_name="Fields", index=False)
 
     def _write_csv_metadata(
         self, output_path: str, metadata: pd.DataFrame | None
     ) -> None:
-        metadata = (
-            metadata
-            if metadata is not None
-            else self.compute_metadata().reset_index()
-        )
+        metadata = metadata if metadata is not None else self._metadata
         metadata.to_csv(output_path, index=False)
 
     def _write_json_metadata(
         self, output_path: str, metadata: dict[Hashable, Any] | None
     ) -> None:
-        metadata = (
-            metadata
-            if metadata is not None
-            else self.compute_metadata().to_dict(orient="index")
-        )
-        json_to_dump = {"fields": metadata}
+        if metadata is not None:
+            metadata_dict = metadata
+        else:
+            _metadata = self.compute_metadata()
+            metadata_dict = _metadata.to_dict(orient="index")
+
+        json_to_dump = {"fields": metadata_dict}
         with open(output_path, "w") as f:
             json.dump(
                 json_to_dump,
@@ -489,13 +498,12 @@ class MetaGen:
     def _write_parquet_metadata(
         self, output_path: str, metadata: pd.DataFrame | None
     ) -> None:
-        metadata = (
-            metadata if metadata is not None else self.compute_metadata()
-        )
+        metadata = metadata if metadata is not None else self._metadata
         metadata.to_parquet(output_path)
 
     def inspect_data(
         self,
+        data: DataFrameT | None = None,
         tbl_rows: int = 10,
         tbl_cols: int | None = None,
         fmt_str_lengths: int = 50,
@@ -503,13 +511,14 @@ class MetaGen:
         """
         Inspect the data.
         """
+        data_to_look = self.data if data is None else data
         tbl_cols = tbl_cols or len(self.data.columns)
         with pl.Config(
             fmt_str_lengths=fmt_str_lengths,
             tbl_cols=tbl_cols,
             tbl_rows=tbl_rows,
         ):
-            return self.data.pipe(print)
+            return data_to_look.pipe(print)
 
     def extract_data(
         self,
