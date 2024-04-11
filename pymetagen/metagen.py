@@ -5,9 +5,9 @@ PyMetaGen
 Python Metadata Generator
 """
 
-from functools import cached_property
 import json
 import subprocess
+from functools import cached_property
 from pathlib import Path
 
 import numpy as np

@@ -5,16 +5,12 @@ This module contains the CLI application for the metagen package.
 """
 
 from __future__ import annotations
+
+import tempfile
+from pathlib import Path
 from pprint import pprint
 
 import click
-from numpy import require
-import polars as pl
-import tempfile
-from pathlib import Path
-
-from traitlets import default
-
 
 from pymetagen import MetaGen, __version__
 from pymetagen.datatypes import MetaGenSupportedLoadingModes
@@ -119,7 +115,7 @@ def cli():
     type=click.BOOL,
     default=False,
     is_flag=True,
-    help=("(optional flag) Show columns with no descriptions"),
+    help="(optional flag) Show columns with no descriptions",
 )
 def metadata(
     input: Path,
