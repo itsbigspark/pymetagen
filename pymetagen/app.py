@@ -78,7 +78,7 @@ def cli():
 )
 @click.option(
     "-xfmt",
-    "--extra_formats",
+    "--extra-formats",
     type=click.STRING,
     required=False,
     default=None,
@@ -88,7 +88,7 @@ def cli():
     ),
 )
 @click.option(
-    "-shw_desc",
+    "-show-desc",
     "--show-descriptions",
     type=click.BOOL,
     default=False,
@@ -110,8 +110,8 @@ def cli():
     ),
 )
 @click.option(
-    "-warn_desc",
-    "--warning_description",
+    "-warn-desc",
+    "--warning-description",
     type=click.BOOL,
     default=False,
     is_flag=True,
