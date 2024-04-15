@@ -63,4 +63,5 @@ black = true
 style = "sphinx"
 
 [tool.pytest.ini_options]
-addopts = '--strict-markers'
+addopts = '--strict-markers --junitxml=test-reports/pytest.xml'
+junit_family = 'xunit1'
