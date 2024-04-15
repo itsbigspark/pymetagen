@@ -11,7 +11,7 @@ commands:
           key: poetry-cache-{{ checksum "poetry.lock" }}
       - run:
           name: Install dependencies
-          command: poetry install --sync
+          command: poetry install --only=dev
       - save_cache:
           key: poetry-cache-{{ checksum "poetry.lock" }}
           paths:
@@ -26,46 +26,67 @@ commands:
       - store_test_results:
           path: test-reports     
 
-  pre-commit-check:
-    description: |
-      Run pre-commit checks
-    steps:
-      - restore_cache:
-          key: pre-commit-cache-{{ checksum ".pre-commit-config.yaml" }}
-      - run: poetry run pre-commit run --all-files
-      - save_cache:
-          key: pre-commit-cache-{{ checksum ".pre-commit-config.yaml" }}
-          paths:
-            - ~/.cache/pre-commit
-
 executors:
-  docker_small:
+  python39:
     docker:
       - image: cimg/python:3.9
     resource_class: small
+  python310:
+    docker:
+      - image: cimg/python:3.10
+    resource_class: small
+  python311:
+    docker:
+      - image: cimg/python:3.11
+    resource_class: small
+  python312:
+    docker:
+      - image: cimg/python:3.12
+    resource_class: small
 
 jobs:
-
-  unit-tests:
-    executor: docker_small
+  unit-test-39:
+    executor: python39
     steps:
       - checkout-install
-      - pre-commit-check
       - run:
           name: Run tests
           command: |
-            poetry run coverage run -m pytest -v
+            poetry run tox -e py39
       - save-test-results
-      - store_artifacts:
-          path: .coverage
-      # TODO upload to coveralls/codecov or similar (complicated with parallelism)
+  unit-test-310:
+    executor: python310
+    steps:
+      - checkout-install
       - run:
-          name: Coverage Report
+          name: Run tests
           command: |
-            poetry run coverage report -m
+            poetry run tox -e py310
+      - save-test-results
+  unit-test-311:
+    executor: python311
+    steps:
+      - checkout-install
+      - run:
+          name: Run tests
+          command: |
+            poetry run tox -e py311
+      - save-test-results
+  unit-test-312:
+    executor: python312
+    steps:
+      - checkout-install
+      - run:
+          name: Run tests
+          command: |
+            poetry run tox -e py312
+      - save-test-results
 
 workflows:
   commit:
     # run on every commit
     jobs:
-      - unit-tests
+      - unit-test-39
+      - unit-test-310
+      - unit-test-311
+      - unit-test-312
