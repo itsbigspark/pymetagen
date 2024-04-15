@@ -695,17 +695,17 @@ testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
 name = "polars"
-version = "0.20.20"
+version = "0.20.19"
 description = "Blazingly fast DataFrame library"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "polars-0.20.20-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:04e57b2858e4279fe47e1fe960534a0e7a007f648622072964d941983c20842a"},
-    {file = "polars-0.20.20-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:1f14a610247130b957f38b352c7f7cf1b92bd34f03e3f3f17bf82a44f1f3fd0f"},
-    {file = "polars-0.20.20-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:8a8ac46f0b0cc437111a9f3091e4d3dc11228c0439e7c9cd11bc3e74ed7b4a89"},
-    {file = "polars-0.20.20-cp38-abi3-manylinux_2_24_aarch64.whl", hash = "sha256:e8a0e358143c12a79d3606a4a5c73e8c986738af54cc8fba2bb272572193405e"},
-    {file = "polars-0.20.20-cp38-abi3-win_amd64.whl", hash = "sha256:12ac570d6a9052ae45492a70fbdd1a0d7ba18c05251c378cff9a07bc7178d145"},
-    {file = "polars-0.20.20.tar.gz", hash = "sha256:1f7cd9fe811ab449d9de8633f819b037045951330bfdbd9c642bdc327a74c1d7"},
+    {file = "polars-0.20.19-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:1d5a63001c8e47376f35b6e389e7f88e6984c721bd9468b01998807bad3c0f2f"},
+    {file = "polars-0.20.19-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:6790e9e8ce0bb8dcefa4e494b5e4ee5eca01df0c7d7151dcc45a7b24aa58939b"},
+    {file = "polars-0.20.19-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b9243752dd2f0c9077b2caa285e4b05d3f80558ad4b8ae448dc41a0b9d5f10a5"},
+    {file = "polars-0.20.19-cp38-abi3-manylinux_2_24_aarch64.whl", hash = "sha256:a0d57955cdc3610ec644ffd249c94c3102ce32df31661b759ab33a6bb4fae65c"},
+    {file = "polars-0.20.19-cp38-abi3-win_amd64.whl", hash = "sha256:20ff4990cbdc05fc5a526902561a16c66ead4d740ff8e7b3bf52d4f3f7def60a"},
+    {file = "polars-0.20.19.tar.gz", hash = "sha256:58f9c3766c6fa3d7193364cfcf93c6c640e6c8e6a49ad8c6fd48b326ad8060f2"},
 ]
 
 [package.extras]
@@ -1417,7 +1417,7 @@ files = [
 name = "xlsxwriter"
 version = "3.2.0"
 description = "A Python module for creating Excel XLSX files."
-optional = false
+optional = true
 python-versions = ">=3.6"
 files = [
     {file = "XlsxWriter-3.2.0-py3-none-any.whl", hash = "sha256:ecfd5405b3e0e228219bcaf24c2ca0915e012ca9464a14048021d21a995d490e"},
@@ -1439,7 +1439,10 @@ files = [
 docs = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "rst.linker (>=1.9)", "sphinx (>=3.5)", "sphinx-lint"]
 testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=2.2)", "pytest-ignore-flaky", "pytest-mypy", "pytest-ruff (>=0.2.1)"]
 
+[extras]
+xlsx = ["xlsxwriter"]
+
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "bb25aaccdfb429fbbec50d21c0467e266d8a0e40e317724be0be26041a19b999"
+content-hash = "6b934fd5f3d070a056da0fe36c38c906a807aef2aee736315bcaea135c646db9"
