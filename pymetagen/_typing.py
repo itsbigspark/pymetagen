@@ -4,6 +4,9 @@ import typing
 
 import polars as pl
 
-DataFrameT: typing.TypeAlias = pl.DataFrame | pl.LazyFrame
+if typing.TYPE_CHECKING:
+    from typing import TypeAlias
+
+DataFrameT: TypeAlias = typing.Union[pl.DataFrame, pl.LazyFrame]  # noqa: F821
 Any = typing.Any
 Hashable = typing.Hashable
