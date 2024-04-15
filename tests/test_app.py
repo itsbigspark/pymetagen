@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 from click import Path
 from click.testing import CliRunner
