@@ -324,17 +324,17 @@ testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
 name = "polars"
-version = "0.20.19"
+version = "0.20.21"
 description = "Blazingly fast DataFrame library"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "polars-0.20.19-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:1d5a63001c8e47376f35b6e389e7f88e6984c721bd9468b01998807bad3c0f2f"},
-    {file = "polars-0.20.19-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:6790e9e8ce0bb8dcefa4e494b5e4ee5eca01df0c7d7151dcc45a7b24aa58939b"},
-    {file = "polars-0.20.19-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b9243752dd2f0c9077b2caa285e4b05d3f80558ad4b8ae448dc41a0b9d5f10a5"},
-    {file = "polars-0.20.19-cp38-abi3-manylinux_2_24_aarch64.whl", hash = "sha256:a0d57955cdc3610ec644ffd249c94c3102ce32df31661b759ab33a6bb4fae65c"},
-    {file = "polars-0.20.19-cp38-abi3-win_amd64.whl", hash = "sha256:20ff4990cbdc05fc5a526902561a16c66ead4d740ff8e7b3bf52d4f3f7def60a"},
-    {file = "polars-0.20.19.tar.gz", hash = "sha256:58f9c3766c6fa3d7193364cfcf93c6c640e6c8e6a49ad8c6fd48b326ad8060f2"},
+    {file = "polars-0.20.21-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:f1de9b7190111b0d6c3731157da26252697ba27f2eef201d01e121c6873e713e"},
+    {file = "polars-0.20.21-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:18847d198cbdb133c35847d096f0b72783c9cc81df0878959dba60495a99a1c7"},
+    {file = "polars-0.20.21-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:32d5e7f5a1bf529ca0a3c14416a8802e746534c4220dc8af42b39ea4962e729a"},
+    {file = "polars-0.20.21-cp38-abi3-manylinux_2_24_aarch64.whl", hash = "sha256:f8196b42791ca6d1de9448e985f0d32d783166a43928bd294486fc37e1c78310"},
+    {file = "polars-0.20.21-cp38-abi3-win_amd64.whl", hash = "sha256:584d3fe8d14516de2d733b9a355ae27a1be943bb2d54e76826887a0e3e122ee3"},
+    {file = "polars-0.20.21.tar.gz", hash = "sha256:1ef8c44dc1a0dd79f3c1a6f73677cddac6e5aca3093cc9fb666f2e098f9b3bef"},
 ]
 
 [package.extras]
@@ -768,4 +768,4 @@ xlsx = ["xlsxwriter"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "7fe006786afe913d38d993d7c012e699e3b69d8fe78564f87d494d3722828543"
+content-hash = "08d12791af84d863a9606922224dba6a226eb8b9b0d39bd00c3e429167ce5fa8"
