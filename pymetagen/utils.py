@@ -18,8 +18,8 @@ if TYPE_CHECKING:
 
 class EnumListMixin:
     @classmethod
-    def list(cls) -> list[str]:
-        return list(map(lambda c: c.value, cls))
+    def list(cls):
+        return list(map(lambda c: c, cls))
 
 
 class InspectionMode(EnumListMixin, str, Enum):
@@ -108,16 +108,18 @@ def sample(
     with_replacement: bool = False,
 ) -> DataFrameT:
     if mode == "eager":
+        assert isinstance(df, pl.DataFrame)
         return df.sample(
             n=tbl_rows, with_replacement=with_replacement, seed=random_seed
         )
     elif mode == "lazy":
+        assert isinstance(df, pl.LazyFrame)
         np.random.seed(random_seed)
-        row_depth = (
-            df.select(pl.first()).select(pl.count()).pipe(collect)[0, 0]
+        row_depth = int(
+            df.select(pl.first()).select(pl.count()).collect()[0, 0]
         )
         row_indexes = np.random.choice(
-            row_depth,
+            a=row_depth,
             size=min(tbl_rows, row_depth),
             replace=with_replacement,
         )
@@ -130,6 +132,8 @@ def sample(
             .filter(pl.col("row_index").is_in(row_indexes))
             .drop("row_index")
         )
+    else:
+        raise NotImplementedError("Mode must be one of ['eager', 'lazy']")
 
 
 def extract_data(
@@ -164,7 +168,7 @@ class CustomEncoder(json.JSONEncoder):
         if isinstance(obj, datetime.datetime | datetime.date | datetime.time):
             return obj.isoformat()
         if isinstance(obj, datetime.datetime):
-            return obj.isoformat(serp="T", timespec="seconds")
+            return obj.isoformat(sep="T", timespec="seconds")
         if isinstance(obj, datetime.timedelta):
             return str(obj)
         if isinstance(obj, Enum):

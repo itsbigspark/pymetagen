@@ -525,8 +525,8 @@ class MetaGen:
     def extract_data(
         self,
         mode: MetaGenSupportedLoadingModes,
+        inspection_mode: InspectionMode,
         tbl_rows: int = 10,
-        inspection_mode: InspectionMode = InspectionMode.head,
         random_seed: int | None = None,
         with_replacement: bool = False,
         inplace: bool = False,
