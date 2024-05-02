@@ -53,7 +53,7 @@ def selectively_update_dict(d: dict[str, Any], new_d: dict[str, Any]) -> None:
             d[k] = v
 
 
-def collect(df: DataFrameT, streaming: bool = True) -> DataFrameT:
+def collect(df: DataFrameT, streaming: bool = True) -> pl.DataFrame:
     """
     Collects a dataframe. If the dataframe is a polars DataFrame, does nothing,
     if it is a polars LazyFrame, collects it.
