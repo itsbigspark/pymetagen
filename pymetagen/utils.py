@@ -5,6 +5,7 @@ import json
 import os
 from enum import Enum
 from glob import glob
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -66,7 +67,7 @@ def collect(df: DataFrameT, streaming: bool = True) -> pl.DataFrame:
     return df
 
 
-def get_nested_parquet_path(base_path: str) -> str:
+def get_nested_parquet_path(base_path: Path | str) -> str:
     """
     Recursively search for a parquet file in a nested directory structure.
     For example, if the base path is:
@@ -109,8 +110,11 @@ def sample(
 ) -> DataFrameT:
     if mode == "eager":
         assert isinstance(df, pl.DataFrame)
+        row_depth = df.height
         return df.sample(
-            n=tbl_rows, with_replacement=with_replacement, seed=random_seed
+            n=min(tbl_rows, row_depth),
+            with_replacement=with_replacement,
+            seed=random_seed,
         )
     elif mode == "lazy":
         assert isinstance(df, pl.LazyFrame)

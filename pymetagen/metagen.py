@@ -66,8 +66,8 @@ class MetaGen:
     def from_path(
         cls,
         path: Path,
+        mode: MetaGenSupportedLoadingModes,
         descriptions_path: Path | None = None,
-        mode: MetaGenSupportedLoadingModes = MetaGenSupportedLoadingModes.EAGER,
         compute_metadata: bool = False,
     ) -> MetaGen:
         """
@@ -145,7 +145,9 @@ class MetaGen:
         return json.loads(path.read_text())["descriptions"]
 
     @staticmethod
-    def _load_descriptions_from_csv(path: Path) -> dict[str, dict[str, str]]:
+    def _load_descriptions_from_csv(
+        path: Path,
+    ) -> dict[Hashable, dict[str, Any]]:
         return (
             pd.read_csv(path).set_index("column_name").to_dict(orient="index")
         )
@@ -178,7 +180,7 @@ class MetaGen:
             " columns in data."
         )
 
-        metadata: dict[str, dict[str, Any]] = {}
+        metadata: dict[Hashable, dict[str, Any]] = {}
 
         simple_metadata = self._get_simple_metadata(
             columns_to_drop=columns_to_drop
@@ -572,8 +574,8 @@ class MetaGen:
                 filtering. If False, the data will be filtered lazily.
         """
         sql = pl.SQLContext()
-        sql.register(table_name, self.data)
-        return sql.execute(sql_query, eager=eager)
+        sql.register(name=table_name, frame=self.data)
+        return sql.execute(query=sql_query, eager=eager)  # type: ignore
 
     def filter_data(
         self, table_name: str, sql_query: Path | str, eager: bool = True

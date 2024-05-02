@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
-from click import Path
 from click.testing import CliRunner
 
 from pymetagen.app import cli
@@ -82,13 +83,7 @@ class TestCli:
         outpath: Path = tmp_dir_path / "meta.csv"
         result = runner.invoke(
             cli,
-            [
-                "inspect",
-                "-i",
-                input_path,
-                "-o",
-                outpath,
-            ],
+            ["inspect", "-i", input_path, "-o", str(outpath), "-m", mode],
         )
 
         assert result.exit_code == 0
@@ -114,7 +109,7 @@ class TestCli:
     ) -> None:
         input_path = request.getfixturevalue(input_path)
         runner = CliRunner()
-        outpath: Path = tmp_dir_path / "trial.csv"
+        outpath = tmp_dir_path / "trial.csv"
         result = runner.invoke(
             cli,
             [
@@ -122,7 +117,9 @@ class TestCli:
                 "-i",
                 input_path,
                 "-o",
-                outpath,
+                str(outpath),
+                "-m",
+                mode,
             ],
         )
 

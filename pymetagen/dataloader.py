@@ -13,6 +13,7 @@ from typing import Any
 import polars as pl
 from polars.datatypes.constants import N_INFER_DEFAULT
 
+from pymetagen._typing import DataFrameT
 from pymetagen.datatypes import MetaGenSupportedFileExtensions
 from pymetagen.exceptions import FileTypeUnsupportedError
 from pymetagen.utils import get_nested_parquet_path, selectively_update_dict
@@ -116,7 +117,7 @@ class DataLoader:
 
     def load(
         self,
-    ) -> pl.DataFrame:
+    ) -> DataFrameT:
         extension_mapping = {
             MetaGenSupportedFileExtensions.CSV: self._load_csv_data,
             MetaGenSupportedFileExtensions.XLSX: self._load_excel_data,
@@ -185,7 +186,7 @@ class LazyDataLoader(DataLoader):
             _default_read_csv_options=POLARS_DEFAULT_LAZY_READ_CSV_OPTIONS,
         )
 
-    def load(self) -> pl.LazyFrame:
+    def load(self):
         return super().load()
 
     def _load_csv_data(self) -> pl.LazyFrame:
