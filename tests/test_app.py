@@ -107,15 +107,20 @@ class TestCli:
         request: pytest.FixtureRequest,
         mode: MetaGenSupportedLoadingModes,
     ) -> None:
-        input_path = request.getfixturevalue(input_path)
+        input_path: Path = request.getfixturevalue(input_path)
         runner = CliRunner()
         outpath = tmp_dir_path / "trial.csv"
+        mode = (
+            MetaGenSupportedLoadingModes.EAGER
+            if input_path.suffix == ".xlsx"
+            else mode
+        )
         result = runner.invoke(
             cli,
             [
                 "extracts",
                 "-i",
-                input_path,
+                str(input_path),
                 "-o",
                 str(outpath),
                 "-m",
