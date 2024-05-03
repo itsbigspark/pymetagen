@@ -34,7 +34,7 @@ class TestCli:
         runner = CliRunner()
         outpath: Path = tmp_dir_path / "meta.csv"
         result = runner.invoke(
-            cli, ["metadata", "-i", input_path, "-o", outpath, "-m", mode]
+            cli, ["metadata", "-i", input_path, "-o", str(outpath), "-m", mode]
         )
 
         assert result.exit_code == 0
@@ -167,7 +167,7 @@ class TestCli:
                 "-i",
                 "tests/data/testdata.csv",
                 "-o",
-                outpath,
+                str(outpath),
                 "--mode",
                 mode,
                 "-q",

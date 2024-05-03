@@ -62,22 +62,7 @@ lazy_csv_unsupported_options = [
 for option in lazy_csv_unsupported_options:
     del POLARS_DEFAULT_LAZY_READ_CSV_OPTIONS[option]
 
-LIST_OF_EXCEL_OPTIONS_FROM_CSV_OPTIONS = [
-    # "storage_options",
-    # "sample_size",
-    # "quote_char",
-    # "skip_rows",
-    # "dtypes",
-    # "null_values",
-    # "missing_utf8_is_empty_string",
-    # "ignore_errors",
-    # "try_parse_dates",
-    # "infer_schema_length",
-    # "encoding",
-    # "skip_rows_after_header",
-    # "eol_char",
-    # "raise_if_empty",
-]
+LIST_OF_EXCEL_OPTIONS_FROM_CSV_OPTIONS = []
 POLARS_DEFAULT_READ_EXCEL_OPTIONS: dict[str, Any] = {
     key: value
     for key, value in POLARS_DEFAULT_READ_CSV_OPTIONS.items()
@@ -119,10 +104,10 @@ class DataLoader:
         self,
     ) -> DataFrameT:
         extension_mapping = {
-            MetaGenSupportedFileExtensions.CSV: self._load_csv_data,
-            MetaGenSupportedFileExtensions.XLSX: self._load_excel_data,
-            MetaGenSupportedFileExtensions.PARQUET: self._load_parquet_data,
-            MetaGenSupportedFileExtensions.JSON: self._load_json_data,
+            MetaGenSupportedFileExtensions.CSV.value: self._load_csv_data,
+            MetaGenSupportedFileExtensions.XLSX.value: self._load_excel_data,
+            MetaGenSupportedFileExtensions.PARQUET.value: self._load_parquet_data,
+            MetaGenSupportedFileExtensions.JSON.value: self._load_json_data,
         }
 
         file_extension = f'.{os.path.basename(self.path).split(".")[-1]}'
@@ -135,14 +120,14 @@ class DataLoader:
 
     def _update_polars_read_excel_options(
         self,
-        sheet_name: str,
+        sheet_name: str | None,
     ) -> dict[str, Any]:
         self.polars_read_excel_options["sheet_name"] = sheet_name
         return self.polars_read_excel_options
 
     def _update_read_csv_polars_options(
         self, polars_read_csv_options: dict[str, Any] | None
-    ) -> dict[str, Any]:
+    ) -> dict[str, Any] | None:
         if polars_read_csv_options is None:
             return
         selectively_update_dict(

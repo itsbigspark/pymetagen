@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any
 
 from pymetagen.utils import EnumListMixin
 
@@ -105,8 +104,8 @@ class MetaGenDataType(str, Enum):
     ]
 
 
-def dtype_to_metagentype(dtype: Any):
-    dtype: str = str(dtype)
+def dtype_to_metagen_type(dtype):
+    d_type: str = str(dtype)
 
     starts_with_map = {
         "Utf": MetaGenDataType.string.value,
@@ -127,7 +126,7 @@ def dtype_to_metagentype(dtype: Any):
     }
 
     for key, value in starts_with_map.items():
-        if dtype.startswith(key):
+        if d_type.startswith(key):
             return value
 
-    raise ValueError(f"Unknown dtype: {dtype}")
+    raise ValueError(f"Unknown dtype: {d_type}")

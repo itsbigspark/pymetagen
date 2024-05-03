@@ -6,7 +6,7 @@ import os
 from enum import Enum
 from glob import glob
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Union
 
 import numpy as np
 import polars as pl
@@ -118,11 +118,12 @@ def sample(
         )
     elif mode == "lazy":
         assert isinstance(df, pl.LazyFrame)
-        np.random.seed(random_seed)
+        random_generator = np.random.default_rng(random_seed)
         row_depth = int(
             df.select(pl.first()).select(pl.count()).collect()[0, 0]
         )
-        row_indexes = np.random.choice(
+
+        row_indexes = random_generator.choice(
             a=row_depth,
             size=min(tbl_rows, row_depth),
             replace=with_replacement,
@@ -169,7 +170,9 @@ class CustomEncoder(json.JSONEncoder):
     def default(self, obj: object):
         if isinstance(obj, set):
             return list(obj)
-        if isinstance(obj, datetime.datetime | datetime.date | datetime.time):
+        if isinstance(
+            obj, Union[datetime.datetime, datetime.date, datetime.time]
+        ):
             return obj.isoformat()
         if isinstance(obj, datetime.datetime):
             return obj.isoformat(sep="T", timespec="seconds")
