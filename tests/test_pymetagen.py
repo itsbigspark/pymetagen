@@ -40,18 +40,18 @@ class TestMetaGen:
     """
 
     def test_init(self, data: str, request: pytest.FixtureRequest):
-        data = request.getfixturevalue(data)
+        df: DataFrameT = request.getfixturevalue(data)
         MetaGen(
-            data=data,
+            data=df,
         )
 
     def test_compute_metadata(self, data: str, request: pytest.FixtureRequest):
-        data = request.getfixturevalue(data)
+        df: DataFrameT = request.getfixturevalue(data)
         metadata = MetaGen(
-            data=data,
+            data=df,
         ).compute_metadata()
 
-        assert set(metadata.index) == set(data.columns)
+        assert set(metadata.index) == set(df.columns)
 
     @pytest.mark.parametrize(
         "extension, read_metadata",
@@ -73,10 +73,10 @@ class TestMetaGen:
         read_metadata: Callable,
         request: pytest.FixtureRequest,
     ):
-        data = request.getfixturevalue(data)
+        df: DataFrameT = request.getfixturevalue(data)
         outpath = tmp_dir_path / f"out.{extension}"
 
-        metagen = MetaGen(data=data)
+        metagen = MetaGen(data=df)
         metagen.write_metadata(outpath=outpath)
 
         assert outpath.exists()
@@ -87,7 +87,7 @@ class TestMetaGen:
         if extension == "json":
             outdata.reset_index(names=["Name"], inplace=True)
 
-        assert len(outdata) == len(data.columns)
+        assert len(outdata) == len(df.columns)
         assert list(outdata.columns) == [
             "Name",
             "Long Name",
@@ -199,7 +199,7 @@ class TestMetadataMethods:
             """,
             eager=eager,
         )
-        assert isinstance(filtered, return_type)
+        assert isinstance(filtered, return_type)  # type: ignore
 
 
 @pytest.mark.parametrize(
@@ -217,9 +217,9 @@ class TestMetaGenFromPath:
         mode: MetaGenSupportedLoadingModes,
         request: pytest.FixtureRequest,
     ):
-        path: Path = request.getfixturevalue(path)
+        file_path: Path = request.getfixturevalue(path)
         MetaGen.from_path(
-            path=path,
+            path=file_path,
             mode=mode,
         )
 
@@ -248,10 +248,10 @@ class TestMetaGenFromPath:
         input_csv_path: Path,
         mode: MetaGenSupportedLoadingModes,
     ):
-        descriptions_path: Path = request.getfixturevalue(descriptions_path)
+        description_path: Path = request.getfixturevalue(descriptions_path)
 
         metagen = MetaGen.from_path(
-            path=input_csv_path, descriptions_path=descriptions_path, mode=mode
+            path=input_csv_path, descriptions_path=description_path, mode=mode
         )
         metadata = metagen.compute_metadata()
 
@@ -261,22 +261,45 @@ class TestMetaGenFromPath:
             assert metadata[field].notna().all()
 
 
-def test_from_path_unsupported_mode(
-    tmp_dir_path: Path,
-):
+def test_from_path_unsupported_mode(tmp_dir_path: Path):
     with pytest.raises(LoadingModeUnsupportedError):
         MetaGen.from_path(
             path=tmp_dir_path / "test.csv",
-            mode="unsupported_mode",
+            mode="unsupported_mode",  # type: ignore
         )
 
 
-def test_write_metadata_unsupported_extension(
-    tmp_dir_path: Path, eager_data: pl.DataFrame
-):
-    metagen = MetaGen(data=pd.DataFrame)
+def test_write_metadata_unsupported_extension(tmp_dir_path: Path):
+    metagen = MetaGen(data=pl.DataFrame())
     with pytest.raises(FileTypeUnsupportedError):
         metagen.write_metadata(tmp_dir_path / "test.unsupported")
+
+
+def test_load_file_extension_none(
+    tmp_dir_path: Path,
+):
+    with pytest.raises(FileTypeUnsupportedError):
+        MetaGen.from_path(
+            path=tmp_dir_path / "test",
+            mode=MetaGenSupportedLoadingModes.LAZY,
+        )
+
+
+def test_file_extension_none_for_parquet_directories():
+    path = Path("tests/data/input_ab_partition")
+    MetaGen.from_path(
+        path=path,
+        mode=MetaGenSupportedLoadingModes.LAZY,
+    )
+
+
+def test_file_extension_none_for_directories_with_no_parquet_files():
+    path = Path("tests/data/directory_without_parquet")
+    with pytest.raises(FileTypeUnsupportedError):
+        MetaGen.from_path(
+            path=path,
+            mode=MetaGenSupportedLoadingModes.LAZY,
+        )
 
 
 class TestMetaGenExtractData:
@@ -296,7 +319,7 @@ class TestMetaGenExtractData:
         inspection_mode: InspectionMode,
     ):
         metagen = MetaGen.from_path(
-            "tests/data/input_ab_partition.parquet", mode=mode
+            Path("tests/data/input_ab_partition.parquet"), mode=mode
         )
 
         extract = metagen.extract_data(

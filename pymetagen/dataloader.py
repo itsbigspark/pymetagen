@@ -5,7 +5,6 @@ Data Loader
 
 from __future__ import annotations
 
-import os
 import warnings
 from pathlib import Path
 from typing import Any
@@ -112,7 +111,7 @@ class DataLoader:
         }
         try:
             file_extension = MetaGenSupportedFileExtensions(
-                f'.{os.path.basename(self.path).split(".")[-1]}'
+                Path(self.path).suffix
             )
         except ValueError:
             raise FileTypeUnsupportedError(
@@ -167,12 +166,12 @@ class DataLoader:
                 f"File {self.path} is not a directory"
             )
 
-        try:
-            return pl.read_parquet(source=self.path)
-        except Exception as e:
+        if ".parquet" not in get_nested_parquet_path(self.path):
             raise FileTypeUnsupportedError(
-                f"Error reading parquet files from {self.path}: {e}"
+                f"Directory {self.path} does not contain any parquet files"
             )
+
+        return self._load_parquet_data()
 
 
 class LazyDataLoader(DataLoader):

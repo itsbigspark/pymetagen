@@ -145,7 +145,7 @@ def extract_data(
     inspection_mode: InspectionMode = InspectionMode.head,
     random_seed: int | None = None,
     with_replacement: bool = False,
-) -> DataFrameT:
+) -> pl.DataFrame:
     """
     Extract a data.
     """
