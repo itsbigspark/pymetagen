@@ -13,6 +13,7 @@ from typing import Any
 import polars as pl
 from polars.datatypes.constants import N_INFER_DEFAULT
 
+from pymetagen._typing import DataFrameT
 from pymetagen.datatypes import MetaGenSupportedFileExtensions
 from pymetagen.exceptions import FileTypeUnsupportedError
 from pymetagen.utils import get_nested_parquet_path, selectively_update_dict
@@ -61,22 +62,7 @@ lazy_csv_unsupported_options = [
 for option in lazy_csv_unsupported_options:
     del POLARS_DEFAULT_LAZY_READ_CSV_OPTIONS[option]
 
-LIST_OF_EXCEL_OPTIONS_FROM_CSV_OPTIONS = [
-    # "storage_options",
-    # "sample_size",
-    # "quote_char",
-    # "skip_rows",
-    # "dtypes",
-    # "null_values",
-    # "missing_utf8_is_empty_string",
-    # "ignore_errors",
-    # "try_parse_dates",
-    # "infer_schema_length",
-    # "encoding",
-    # "skip_rows_after_header",
-    # "eol_char",
-    # "raise_if_empty",
-]
+LIST_OF_EXCEL_OPTIONS_FROM_CSV_OPTIONS = []
 POLARS_DEFAULT_READ_EXCEL_OPTIONS: dict[str, Any] = {
     key: value
     for key, value in POLARS_DEFAULT_READ_CSV_OPTIONS.items()
@@ -116,32 +102,34 @@ class DataLoader:
 
     def load(
         self,
-    ) -> pl.DataFrame:
+    ) -> DataFrameT:
         extension_mapping = {
             MetaGenSupportedFileExtensions.CSV: self._load_csv_data,
             MetaGenSupportedFileExtensions.XLSX: self._load_excel_data,
             MetaGenSupportedFileExtensions.PARQUET: self._load_parquet_data,
             MetaGenSupportedFileExtensions.JSON: self._load_json_data,
+            MetaGenSupportedFileExtensions.NONE: self._load_none_suffix,
         }
-
-        file_extension = f'.{os.path.basename(self.path).split(".")[-1]}'
         try:
-            return extension_mapping[file_extension]()
-        except KeyError:
-            raise FileTypeUnsupportedError(
-                f"File extension {file_extension} is not supported"
+            file_extension = MetaGenSupportedFileExtensions(
+                f'.{os.path.basename(self.path).split(".")[-1]}'
             )
+        except ValueError:
+            raise FileTypeUnsupportedError(
+                f"File extension for {self.path} is not supported"
+            )
+        return extension_mapping[file_extension]()
 
     def _update_polars_read_excel_options(
         self,
-        sheet_name: str,
+        sheet_name: str | None,
     ) -> dict[str, Any]:
         self.polars_read_excel_options["sheet_name"] = sheet_name
         return self.polars_read_excel_options
 
     def _update_read_csv_polars_options(
         self, polars_read_csv_options: dict[str, Any] | None
-    ) -> dict[str, Any]:
+    ) -> dict[str, Any] | None:
         if polars_read_csv_options is None:
             return
         selectively_update_dict(
@@ -170,6 +158,22 @@ class DataLoader:
     def _load_json_data(self):
         raise NotImplementedError
 
+    def _load_none_suffix(self):
+        """
+        Only used for partitioned parquet files that have no suffix.
+        """
+        if not self.path.is_dir():
+            raise FileTypeUnsupportedError(
+                f"File {self.path} is not a directory"
+            )
+
+        try:
+            return pl.read_parquet(source=self.path)
+        except Exception as e:
+            raise FileTypeUnsupportedError(
+                f"Error reading parquet files from {self.path}: {e}"
+            )
+
 
 class LazyDataLoader(DataLoader):
     def __init__(
@@ -185,7 +189,7 @@ class LazyDataLoader(DataLoader):
             _default_read_csv_options=POLARS_DEFAULT_LAZY_READ_CSV_OPTIONS,
         )
 
-    def load(self) -> pl.LazyFrame:
+    def load(self) -> DataFrameT:
         return super().load()
 
     def _load_csv_data(self) -> pl.LazyFrame:

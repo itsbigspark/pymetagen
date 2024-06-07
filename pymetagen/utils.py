@@ -5,6 +5,7 @@ import json
 import os
 from enum import Enum
 from glob import glob
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
 class EnumListMixin:
     @classmethod
     def list(cls) -> list[str]:
-        return list(map(lambda c: c.value, cls))
+        return list(map(lambda c: c.value, cls))  # type: ignore
 
 
 class InspectionMode(EnumListMixin, str, Enum):
@@ -66,7 +67,7 @@ def collect(df: DataFrameT, streaming: bool = True) -> pl.DataFrame:
     return df
 
 
-def get_nested_parquet_path(base_path: str) -> str:
+def get_nested_parquet_path(base_path: Path | str) -> str:
     """
     Recursively search for a parquet file in a nested directory structure.
     For example, if the base path is:
@@ -108,15 +109,16 @@ def sample(
     with_replacement: bool = False,
 ) -> DataFrameT:
     if mode == "eager":
+        assert isinstance(df, pl.DataFrame)
         return df.sample(
             n=tbl_rows, with_replacement=with_replacement, seed=random_seed
         )
     elif mode == "lazy":
-        np.random.seed(random_seed)
         row_depth = (
             df.select(pl.first()).select(pl.count()).pipe(collect)[0, 0]
         )
-        row_indexes = np.random.choice(
+        generator = np.random.Generator(np.random.PCG64(random_seed))
+        row_indexes = generator.choice(
             row_depth,
             size=min(tbl_rows, row_depth),
             replace=with_replacement,
@@ -129,6 +131,10 @@ def sample(
             )
             .filter(pl.col("row_index").is_in(row_indexes))
             .drop("row_index")
+        )
+    else:
+        raise NotImplementedError(
+            f"mode must be one of {MetaGenSupportedLoadingModes.list()}"
         )
 
 
@@ -164,7 +170,7 @@ class CustomEncoder(json.JSONEncoder):
         if isinstance(obj, datetime.datetime | datetime.date | datetime.time):
             return obj.isoformat()
         if isinstance(obj, datetime.datetime):
-            return obj.isoformat(serp="T", timespec="seconds")
+            return obj.isoformat(sep="T", timespec="seconds")
         if isinstance(obj, datetime.timedelta):
             return str(obj)
         if isinstance(obj, Enum):
