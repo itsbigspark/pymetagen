@@ -17,8 +17,8 @@ xlsxwriter = "^3.2.0"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.7.1"
-pytest = "^8.2.1"
-tox = "^4.15.0"
+pytest = "^8.2.2"
+tox = "^4.15.1"
 
 [tool.poetry.extras]
 xlsx = ["xlsxwriter"]
