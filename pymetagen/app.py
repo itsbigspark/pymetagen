@@ -278,11 +278,11 @@ def metadata(
 def inspect(
     input: Path,
     output: Path | None,
-    mode: str | MetaGenSupportedLoadingModes,
+    mode: MetaGenSupportedLoadingModes,
     number_rows: int,
     preview: bool,
     fmt_str_lengths: int,
-    inspection_mode: str | InspectionMode,
+    inspection_mode: InspectionMode,
     random_seed: int,
     with_replacement: bool,
 ) -> None:

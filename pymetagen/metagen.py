@@ -250,9 +250,7 @@ class MetaGen:
                 "long_name", ""
             )
 
-        full_metadata: pd.DataFrame = pd.DataFrame(metadata).replace(
-            np.nan, None
-        )
+        full_metadata = pd.DataFrame(metadata).replace(np.nan, None)
         full_metadata.index.name = "Name"
         return full_metadata[pymetagen_columns]
 

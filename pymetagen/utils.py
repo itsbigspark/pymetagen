@@ -67,11 +67,16 @@ def collect(df: DataFrameT, streaming: bool = True) -> pl.DataFrame:
     return df
 
 
-def get_nested_parquet_path(base_path: Path | str) -> str:
+def get_nested_path(
+    base_path: Path | str, file_extension: str = "parquet"
+) -> str:
     """
-    Recursively search for a parquet file in a nested directory structure.
+    Recursively search for a file with the given file_extension in a
+    nested directory structure.
+
     For example, if the base path is:
             - base_path = /path/foo.parquet
+            - file_extension = parquet
     but foo.parquet is a directory of partitioned parquet files, such as:
             - /path/foo.parquet/month=01/partition0.parquet
             - /path/foo.parquet/month=01/partition1.parquet
@@ -82,21 +87,23 @@ def get_nested_parquet_path(base_path: Path | str) -> str:
     It will add a wildcard "*" for each partitioned directory that it finds.
 
     Args:
-        base_path: base parquet directory
+        base_path: base directory
+        file_extension: file extension to recursively search.
+                        Defaults to parquet
 
     Returns:
-        recursive path to parquet file
+        recursive path to file
     """
     nested_path = str(base_path)
     list_of_paths = glob(nested_path)
     path_in_nested_paths = list_of_paths.pop() if list_of_paths else ""
     if os.path.isdir(path_in_nested_paths):
         new_nested_base_path = os.path.join(base_path, "*")
-        new_nested_path = os.path.join(base_path, "*.parquet")
+        new_nested_path = os.path.join(base_path, f"*.{file_extension}")
         if glob(new_nested_path):
             return new_nested_path
         else:
-            return get_nested_parquet_path(new_nested_base_path)
+            return get_nested_path(new_nested_base_path)
     else:
         return nested_path
 
