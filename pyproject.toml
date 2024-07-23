@@ -7,7 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.9"
-pyarrow = "^16.1.0"
+pyarrow = "^17.0.0"
 pandas = "^2.2.2"
 regex = "^2024.5.15"
 polars = "^0.20.31"
