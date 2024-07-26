@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from pymetagen.utils import get_nested_parquet_path
+from pymetagen.utils import get_nested_path
 
 input_paths = ["input_csv_path", "input_parquet_path", "input_xlsx_path"]
 
@@ -29,5 +29,5 @@ class TestMetaGenUtils:
     def test_get_nested_parquet_path(
         self, base_path: str, expected_result: str
     ):
-        nested_path = get_nested_parquet_path(base_path)
+        nested_path = get_nested_path(base_path)
         assert nested_path == expected_result

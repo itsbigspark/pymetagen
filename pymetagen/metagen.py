@@ -60,14 +60,14 @@ class MetaGen:
         self.data = data
         self.descriptions = descriptions or {}
         if compute_metadata:
-            self._metadata
+            self.pandas_metadata = self._metadata
 
     @classmethod
     def from_path(
         cls,
         path: Path,
         descriptions_path: Path | None = None,
-        mode: MetaGenSupportedLoadingModes = MetaGenSupportedLoadingModes.EAGER,
+        mode: MetaGenSupportedLoadingModes = MetaGenSupportedLoadingModes.LAZY,
         compute_metadata: bool = False,
     ) -> MetaGen:
         """
@@ -145,7 +145,9 @@ class MetaGen:
         return json.loads(path.read_text())["descriptions"]
 
     @staticmethod
-    def _load_descriptions_from_csv(path: Path) -> dict[str, dict[str, str]]:
+    def _load_descriptions_from_csv(
+        path: Path,
+    ) -> dict[Hashable, dict[str, str]]:
         return (
             pd.read_csv(path).set_index("column_name").to_dict(orient="index")
         )
@@ -178,7 +180,7 @@ class MetaGen:
             " columns in data."
         )
 
-        metadata: dict[str, dict[str, Any]] = {}
+        metadata: dict[Hashable, dict[str, Any]] = {}
 
         simple_metadata = self._get_simple_metadata(
             columns_to_drop=columns_to_drop
@@ -248,9 +250,7 @@ class MetaGen:
                 "long_name", ""
             )
 
-        full_metadata: pd.DataFrame = pd.DataFrame(metadata).replace(
-            np.nan, None
-        )
+        full_metadata = pd.DataFrame(metadata).replace(np.nan, None)
         full_metadata.index.name = "Name"
         return full_metadata[pymetagen_columns]
 
@@ -530,7 +530,7 @@ class MetaGen:
         random_seed: int | None = None,
         with_replacement: bool = False,
         inplace: bool = False,
-    ) -> DataFrameT:
+    ) -> pl.DataFrame:
         """
         Extract data from a file.
         """
@@ -573,7 +573,7 @@ class MetaGen:
         """
         sql = pl.SQLContext()
         sql.register(table_name, self.data)
-        return sql.execute(sql_query, eager=eager)
+        return sql.execute(query=sql_query, eager=eager)  # type: ignore
 
     def filter_data(
         self, table_name: str, sql_query: Path | str, eager: bool = True
@@ -629,7 +629,7 @@ class MetaGen:
         self, output_path: Path | str, data: DataFrameT | None
     ) -> None:
         data = data if data is not None else self.data
-        data.pipe(collect).write_excel(output_path, index=False)
+        data.pipe(collect).write_excel(output_path)
 
     def _write_json_data(
         self, output_path: Path | str, data: DataFrameT | None

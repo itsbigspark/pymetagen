@@ -21,6 +21,7 @@ class MetaGenSupportedFileExtensions(EnumListMixin, str, Enum):
     JSON = ".json"
     PARQUET = ".parquet"
     XLSX = ".xlsx"
+    NONE = ""
 
 
 class MetaGenDataType(str, Enum):
@@ -69,7 +70,7 @@ class MetaGenDataType(str, Enum):
     String = "String"
     Unknown = "Unknown"
 
-    numeric_data_types: list[MetaGenDataType] = [
+    numeric_data_types: list[str] = [
         Decimal,
         Float32,
         Float64,
@@ -85,7 +86,7 @@ class MetaGenDataType(str, Enum):
         integer,
     ]
 
-    date_data_types: list[MetaGenDataType] = [
+    date_data_types: list[str] = [
         Date,
         Datetime,
         Duration,
@@ -96,7 +97,7 @@ class MetaGenDataType(str, Enum):
         time,
     ]
 
-    categorical_data_types: list[MetaGenDataType] = [
+    categorical_data_types: list[str] = [
         Categorical,
         Utf8,
         string,
@@ -106,7 +107,7 @@ class MetaGenDataType(str, Enum):
 
 
 def dtype_to_metagentype(dtype: Any):
-    dtype: str = str(dtype)
+    d_type = str(dtype)
 
     starts_with_map = {
         "Utf": MetaGenDataType.string.value,
@@ -127,7 +128,7 @@ def dtype_to_metagentype(dtype: Any):
     }
 
     for key, value in starts_with_map.items():
-        if dtype.startswith(key):
+        if d_type.startswith(key):
             return value
 
-    raise ValueError(f"Unknown dtype: {dtype}")
+    raise ValueError(f"Unknown dtype: {d_type}")
