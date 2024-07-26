@@ -3,10 +3,11 @@ from __future__ import annotations
 import datetime
 import json
 import os
+from collections.abc import Sequence
 from enum import Enum
 from glob import glob
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, Self, Union
 
 import numpy as np
 import polars as pl
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
 
 class EnumListMixin:
     @classmethod
-    def list(cls) -> list[str]:
+    def list(cls) -> list[Self]:
         return list(map(lambda c: c.value, cls))  # type: ignore
 
 
@@ -190,3 +191,57 @@ class CustomEncoder(json.JSONEncoder):
         if isinstance(obj, Enum):
             return str(obj)
         return json.JSONEncoder.default(self, obj)
+
+
+def map_inspection_modes(
+    inspection_modes: Sequence[str],
+) -> Sequence[InspectionMode]:
+    """
+    Map inspection modes to InspectionMode enum. If the inspection mode is not
+    supported, raise an error.  Supported inspection modes are head, tail, and
+    sample.
+
+    Args:
+        inspection_modes: list of inspection modes as strings
+
+    Returns:
+        list of InspectionMode enums
+    """
+    if not all(
+        inspection_mode in InspectionMode.list()
+        for inspection_mode in inspection_modes
+    ):
+        raise ValueError(
+            f"inspection_modes must be one of {InspectionMode.list()}"
+        )
+
+    return [
+        InspectionMode(inspection_mode) for inspection_mode in inspection_modes
+    ]
+
+
+def map_string_to_list_inspection_modes(
+    inspection_modes: str | None,
+) -> Sequence[InspectionMode]:
+    """
+    Map inspection modes to a list of InspectionMode enum.
+    If the inspection mode is not supported, raise an error.
+    Supported inspection modes are head, tail, and sample.
+    In case the inspection_modes is None, return all InspectionMode enums.
+
+
+    Args:
+        inspection_modes: list of inspection modes as strings separated
+        by commas
+
+    Returns:
+        list of InspectionMode enums
+    """
+    if inspection_modes is None:
+        return InspectionMode.list()
+    list_of_ignored_inspection_modes = inspection_modes.replace(" ", "").split(
+        ","
+    )
+    return map_inspection_modes(
+        inspection_modes=list_of_ignored_inspection_modes
+    )

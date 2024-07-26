@@ -14,7 +14,7 @@ import click
 
 from pymetagen import MetaGen, __version__
 from pymetagen.datatypes import MetaGenSupportedLoadingModes
-from pymetagen.utils import InspectionMode
+from pymetagen.utils import InspectionMode, map_string_to_list_inspection_modes
 
 
 @click.group(
@@ -409,24 +409,16 @@ def extracts(
     random_seed: int,
     with_replacement: bool,
     extra_formats: str | None,
-    ignore_inspection_modes: InspectionMode,
+    ignore_inspection_modes: str | None,
 ) -> None:
     """
     A tool to extract n number of rows from a data set. It can extract
     head, tail, random sample at the same time.
     """
     metagen = MetaGen.from_path(path=input, mode=mode)
-    selected_ignore_inspection_modes = (
-        ignore_inspection_modes.split(",")
-        if ignore_inspection_modes is not None
-        else []
+    inspection_modes = map_string_to_list_inspection_modes(
+        ignore_inspection_modes
     )
-    inspection_modes: list[InspectionMode] = [
-        im
-        for im in InspectionMode.list()
-        if im not in selected_ignore_inspection_modes
-    ]
-
     for im in inspection_modes:
         data = metagen.extract_data(
             mode=mode,
