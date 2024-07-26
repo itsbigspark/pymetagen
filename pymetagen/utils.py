@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from enum import Enum
 from glob import glob
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Self, Union
+from typing import TYPE_CHECKING, Any, Union
 
 import numpy as np
 import polars as pl
@@ -15,6 +15,8 @@ import polars as pl
 from pymetagen._typing import DataFrameT
 
 if TYPE_CHECKING:
+    from typing_extensions import Self
+
     from pymetagen.datatypes import MetaGenSupportedLoadingModes
 
 
