@@ -60,13 +60,13 @@ class MetaGen:
         self.data = data
         self.descriptions = descriptions or {}
         if compute_metadata:
-            self._metadata
+            self.pandas_metadata = self._metadata
 
     @classmethod
     def from_path(
         cls,
         path: Path,
-        mode: MetaGenSupportedLoadingModes,
+        mode: MetaGenSupportedLoadingModes = MetaGenSupportedLoadingModes.LAZY,
         descriptions_path: Path | None = None,
         compute_metadata: bool = False,
     ) -> MetaGen:
@@ -250,9 +250,7 @@ class MetaGen:
                 "long_name", ""
             )
 
-        full_metadata: pd.DataFrame = pd.DataFrame(metadata).replace(
-            np.nan, None
-        )
+        full_metadata = pd.DataFrame(metadata).replace(np.nan, None)
         full_metadata.index.name = "Name"
         return full_metadata[pymetagen_columns]
 
@@ -534,7 +532,7 @@ class MetaGen:
         random_seed: int | None = None,
         with_replacement: bool = False,
         inplace: bool = False,
-    ) -> DataFrameT:
+    ) -> pl.DataFrame:
         """
         Extract data from a file.
         """
@@ -576,7 +574,7 @@ class MetaGen:
                 filtering. If False, the data will be filtered lazily.
         """
         sql = pl.SQLContext()
-        sql.register(name=table_name, frame=self.data)
+        sql.register(table_name, self.data)
         return sql.execute(query=sql_query, eager=eager)  # type: ignore
 
     def filter_data(

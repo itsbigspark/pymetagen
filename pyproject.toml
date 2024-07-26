@@ -1,24 +1,24 @@
 [tool.poetry]
 name = "pymetagen"
-version = "0.2.2"
+version = "0.2.4"
 description = "Metadata generator using polars as backend."
 authors = ["Smart Data Foundy <info@smartdatafoundry.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.9"
-pyarrow = "^16.0.0"
+pyarrow = "^17.0.0"
 pandas = "^2.2.2"
-regex = "^2024.5.10"
-polars = "^0.20.25"
-openpyxl = "^3.1.2"
+regex = "^2024.5.15"
+polars = "^0.20.31"
+openpyxl = "^3.1.4"
 click = "^8.1.7"
 xlsxwriter = "^3.2.0"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.7.1"
-pytest = "^8.2.0"
-tox = "^4.15.0"
+pytest = "^8.2.2"
+tox = "^4.15.1"
 
 [tool.poetry.extras]
 xlsx = ["xlsxwriter"]
