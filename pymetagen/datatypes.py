@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from enum import Enum
 
 from pymetagen.utils import EnumListMixin
@@ -69,40 +70,46 @@ class MetaGenDataType(str, Enum):
     String = "String"
     Unknown = "Unknown"
 
-    numeric_data_types: list[str] = [
-        Decimal,
-        Float32,
-        Float64,
-        Int8,
-        Int16,
-        Int32,
-        Int64,
-        UInt8,
-        UInt16,
-        UInt32,
-        UInt64,
-        float,
-        integer,
-    ]
+    @classmethod
+    def numeric_data_types(cls) -> Sequence[MetaGenDataType]:
+        return [
+            MetaGenDataType.Decimal,
+            MetaGenDataType.Float32,
+            MetaGenDataType.Float64,
+            MetaGenDataType.Int8,
+            MetaGenDataType.Int16,
+            MetaGenDataType.Int32,
+            MetaGenDataType.Int64,
+            MetaGenDataType.UInt8,
+            MetaGenDataType.UInt16,
+            MetaGenDataType.UInt32,
+            MetaGenDataType.UInt64,
+            MetaGenDataType.float,
+            MetaGenDataType.integer,
+        ]
 
-    date_data_types: list[str] = [
-        Date,
-        Datetime,
-        Duration,
-        Time,
-        date,
-        datetime,
-        duration,
-        time,
-    ]
+    @classmethod
+    def date_data_types(cls) -> Sequence[MetaGenDataType]:
+        return [
+            MetaGenDataType.Date,
+            MetaGenDataType.Datetime,
+            MetaGenDataType.Duration,
+            MetaGenDataType.Time,
+            MetaGenDataType.date,
+            MetaGenDataType.datetime,
+            MetaGenDataType.duration,
+            MetaGenDataType.time,
+        ]
 
-    categorical_data_types: list[str] = [
-        Categorical,
-        Utf8,
-        string,
-        category,
-        String,
-    ]
+    @classmethod
+    def categorical_data_types(cls) -> Sequence[MetaGenDataType]:
+        return [
+            MetaGenDataType.Categorical,
+            MetaGenDataType.Utf8,
+            MetaGenDataType.String,
+            MetaGenDataType.category,
+            MetaGenDataType.string,
+        ]
 
 
 def dtype_to_metagen_type(dtype):

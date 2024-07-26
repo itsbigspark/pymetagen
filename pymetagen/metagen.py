@@ -312,7 +312,7 @@ class MetaGen:
             null_count = data.null_count().row(0)[0]
             zero_count = (
                 data.filter(pl.col(col) == 0).shape[0]
-                if types[col] in MetaGenDataType.numeric_data_types
+                if types[col] in MetaGenDataType.numeric_data_types()
                 else 0
             )
             nulls[col] = zero_count + null_count
@@ -325,7 +325,7 @@ class MetaGen:
         for col in self.data.columns:
             pos_count = (
                 self.data.filter(pl.col(col) > 0).pipe(collect).shape[0]
-                if types[col] in MetaGenDataType.numeric_data_types
+                if types[col] in MetaGenDataType.numeric_data_types()
                 else None
             )
             pos[col] = pos_count
@@ -338,7 +338,7 @@ class MetaGen:
         for col in self.data.columns:
             neg_count = (
                 self.data.filter(pl.col(col) < 0).pipe(collect).shape[0]
-                if types[col] in MetaGenDataType.numeric_data_types
+                if types[col] in MetaGenDataType.numeric_data_types()
                 else None
             )
             neg[col] = neg_count
@@ -349,7 +349,7 @@ class MetaGen:
     ) -> dict[str, int | None]:
         min_str_length = {}
         for col in self.data.columns:
-            if types[col] in MetaGenDataType.categorical_data_types:
+            if types[col] in MetaGenDataType.categorical_data_types():
                 min_str_length[col] = (
                     self.data.with_columns(
                         pl.col(col)
@@ -371,7 +371,7 @@ class MetaGen:
     ) -> dict[str, int | None]:
         max_str_length = {}
         for col in self.data.columns:
-            if types[col] in MetaGenDataType.categorical_data_types:
+            if types[col] in MetaGenDataType.categorical_data_types():
                 max_str_length[col] = (
                     self.data.with_columns(
                         pl.col(col)
