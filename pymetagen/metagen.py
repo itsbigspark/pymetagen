@@ -22,7 +22,7 @@ from pymetagen.datatypes import (
     MetaGenDataType,
     MetaGenSupportedFileExtensions,
     MetaGenSupportedLoadingModes,
-    dtype_to_metagentype,
+    dtype_to_metagen_type,
 )
 from pymetagen.exceptions import (
     FileTypeUnsupportedError,
@@ -66,8 +66,8 @@ class MetaGen:
     def from_path(
         cls,
         path: Path,
-        descriptions_path: Path | None = None,
         mode: MetaGenSupportedLoadingModes = MetaGenSupportedLoadingModes.LAZY,
+        descriptions_path: Path | None = None,
         compute_metadata: bool = False,
     ) -> MetaGen:
         """
@@ -107,18 +107,18 @@ class MetaGen:
             MetaGenSupportedLoadingModes.EAGER: DataLoader,
         }
         try:
-            LoaderClass = mode_mapping[mode]
+            loader_class = mode_mapping[mode]
         except KeyError:
             raise LoadingModeUnsupportedError(
                 f"Mode {mode} is not supported. Supported modes are: "
                 f"{MetaGenSupportedLoadingModes.list()}"
             )
-        data = LoaderClass(path)()
+        data = loader_class(path)()
 
         if descriptions_path is not None:
             func_map = {
-                ".json": cls._load_descriptions_from_json,
-                ".csv": cls._load_descriptions_from_csv,
+                MetaGenSupportedFileExtensions.JSON.value: cls._load_descriptions_from_json,
+                MetaGenSupportedFileExtensions.CSV.value: cls._load_descriptions_from_csv,
             }
             descriptions = func_map[descriptions_path.suffix](
                 descriptions_path
@@ -147,7 +147,7 @@ class MetaGen:
     @staticmethod
     def _load_descriptions_from_csv(
         path: Path,
-    ) -> dict[Hashable, dict[str, str]]:
+    ) -> dict[Hashable, dict[str, Any]]:
         return (
             pd.read_csv(path).set_index("column_name").to_dict(orient="index")
         )
@@ -259,10 +259,12 @@ class MetaGen:
     ) -> dict[str, pd.DataFrame | dict[Hashable, Any]]:
         metadata = self.compute_metadata()
         return {
-            ".parquet": metadata,
-            ".csv": metadata.reset_index(),
-            ".xlsx": metadata.reset_index(),
-            ".json": metadata.to_dict(orient="index"),
+            MetaGenSupportedFileExtensions.PARQUET.value: metadata,
+            MetaGenSupportedFileExtensions.CSV.value: metadata.reset_index(),
+            MetaGenSupportedFileExtensions.XLSX.value: metadata.reset_index(),
+            MetaGenSupportedFileExtensions.JSON.value: metadata.to_dict(
+                orient="index"
+            ),
         }
 
     def _get_simple_metadata(
@@ -296,7 +298,7 @@ class MetaGen:
 
         types_: dict[Hashable, str] = {}
         for col, type_ in zip(self.data.columns, self.data.dtypes):
-            types_[col] = dtype_to_metagentype(type_)
+            types_[col] = dtype_to_metagen_type(type_)
         metadata_table["Type"] = types_
 
         return metadata_table
@@ -525,8 +527,8 @@ class MetaGen:
     def extract_data(
         self,
         mode: MetaGenSupportedLoadingModes,
+        inspection_mode: InspectionMode,
         tbl_rows: int = 10,
-        inspection_mode: InspectionMode = InspectionMode.head,
         random_seed: int | None = None,
         with_replacement: bool = False,
         inplace: bool = False,

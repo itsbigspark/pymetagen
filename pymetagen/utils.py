@@ -6,7 +6,7 @@ import os
 from enum import Enum
 from glob import glob
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Union
 
 import numpy as np
 import polars as pl
@@ -117,16 +117,21 @@ def sample(
 ) -> DataFrameT:
     if mode == "eager":
         assert isinstance(df, pl.DataFrame)
+        row_depth = df.height
         return df.sample(
-            n=tbl_rows, with_replacement=with_replacement, seed=random_seed
+            n=min(tbl_rows, row_depth),
+            with_replacement=with_replacement,
+            seed=random_seed,
         )
     elif mode == "lazy":
-        row_depth = (
-            df.select(pl.first()).select(pl.count()).pipe(collect)[0, 0]
+        assert isinstance(df, pl.LazyFrame)
+        random_generator = np.random.default_rng(random_seed)
+        row_depth = int(
+            df.select(pl.first()).select(pl.count()).collect()[0, 0]
         )
-        generator = np.random.Generator(np.random.PCG64(random_seed))
-        row_indexes = generator.choice(
-            row_depth,
+
+        row_indexes = random_generator.choice(
+            a=row_depth,
             size=min(tbl_rows, row_depth),
             replace=with_replacement,
         )
@@ -174,7 +179,9 @@ class CustomEncoder(json.JSONEncoder):
     def default(self, obj: object):
         if isinstance(obj, set):
             return list(obj)
-        if isinstance(obj, datetime.datetime | datetime.date | datetime.time):
+        if isinstance(
+            obj, Union[datetime.datetime, datetime.date, datetime.time]
+        ):
             return obj.isoformat()
         if isinstance(obj, datetime.datetime):
             return obj.isoformat(sep="T", timespec="seconds")

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any
 
 from pymetagen.utils import EnumListMixin
 
@@ -106,7 +105,7 @@ class MetaGenDataType(str, Enum):
     ]
 
 
-def dtype_to_metagentype(dtype: Any):
+def dtype_to_metagen_type(dtype):
     d_type = str(dtype)
 
     starts_with_map = {

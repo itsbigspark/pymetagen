@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
-from click import Path
 from click.testing import CliRunner
 
 from pymetagen.app import cli
@@ -33,7 +34,7 @@ class TestCli:
         runner = CliRunner()
         outpath: Path = tmp_dir_path / "meta.csv"
         result = runner.invoke(
-            cli, ["metadata", "-i", input_path, "-o", outpath, "-m", mode]
+            cli, ["metadata", "-i", input_path, "-o", str(outpath), "-m", mode]
         )
 
         assert result.exit_code == 0
@@ -82,13 +83,7 @@ class TestCli:
         outpath: Path = tmp_dir_path / "meta.csv"
         result = runner.invoke(
             cli,
-            [
-                "inspect",
-                "-i",
-                input_path,
-                "-o",
-                outpath,
-            ],
+            ["inspect", "-i", input_path, "-o", str(outpath), "-m", mode],
         )
 
         assert result.exit_code == 0
@@ -112,17 +107,24 @@ class TestCli:
         request: pytest.FixtureRequest,
         mode: MetaGenSupportedLoadingModes,
     ) -> None:
-        input_path = request.getfixturevalue(input_path)
+        inpath: Path = request.getfixturevalue(input_path)
         runner = CliRunner()
-        outpath: Path = tmp_dir_path / "trial.csv"
+        outpath = tmp_dir_path / "trial.csv"
+        mode = (
+            MetaGenSupportedLoadingModes.EAGER
+            if inpath.suffix == ".xlsx"
+            else mode
+        )
         result = runner.invoke(
             cli,
             [
                 "extracts",
                 "-i",
-                input_path,
+                str(inpath),
                 "-o",
-                outpath,
+                str(outpath),
+                "-m",
+                mode,
             ],
         )
 
@@ -170,7 +172,7 @@ class TestCli:
                 "-i",
                 "tests/data/testdata.csv",
                 "-o",
-                outpath,
+                str(outpath),
                 "--mode",
                 mode,
                 "-q",

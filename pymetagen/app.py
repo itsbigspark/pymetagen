@@ -121,7 +121,7 @@ def metadata(
     input: Path,
     output: Path | None,
     descriptions: Path | None,
-    mode: str,
+    mode: MetaGenSupportedLoadingModes,
     extra_formats: str | None,
     show_descriptions: bool,
     preview: bool,
@@ -174,9 +174,9 @@ def metadata(
     if warning_description:
         click.echo("Column without Descriptions:")
         click.echo(
-            metagen._metadata[
-                metagen._metadata["Description"] == ""
-            ].Name.to_list()
+            metagen._metadata[metagen._metadata["Description"] == ""][
+                "Name"
+            ].to_list()
         )
 
 
@@ -396,34 +396,35 @@ def inspect(
     "--ignore_inspection_modes",
     type=click.STRING,
     required=False,
-    default=None,
     help=(
         "Comma-separated list of inspection modes to ignore. Can be of type:"
-        " head, tail, sample. Defaults to None."
+        " head, tail, sample."
     ),
 )
 def extracts(
     input: Path,
     output: Path,
-    mode: str | MetaGenSupportedLoadingModes,
+    mode: MetaGenSupportedLoadingModes,
     number_rows: int,
     random_seed: int,
     with_replacement: bool,
     extra_formats: str | None,
-    ignore_inspection_modes: str | None,
+    ignore_inspection_modes: InspectionMode,
 ) -> None:
     """
     A tool to extract n number of rows from a data set. It can extract
     head, tail, random sample at the same time.
     """
     metagen = MetaGen.from_path(path=input, mode=mode)
-    ignore_insp_modes = (
+    selected_ignore_inspection_modes = (
         ignore_inspection_modes.split(",")
         if ignore_inspection_modes is not None
         else []
     )
-    inspection_modes = [
-        im for im in InspectionMode.list() if im not in ignore_insp_modes
+    inspection_modes: list[InspectionMode] = [
+        im
+        for im in InspectionMode.list()
+        if im not in selected_ignore_inspection_modes
     ]
 
     for im in inspection_modes:
