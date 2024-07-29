@@ -20,8 +20,8 @@ from pymetagen._typing import Any, DataFrameT, Hashable
 from pymetagen.dataloader import DataLoader, LazyDataLoader
 from pymetagen.datatypes import (
     MetaGenDataType,
-    MetaGenSupportedFileExtensions,
-    MetaGenSupportedLoadingModes,
+    MetaGenSupportedFileExtension,
+    MetaGenSupportedLoadingMode,
     dtype_to_metagen_type,
 )
 from pymetagen.exceptions import (
@@ -66,7 +66,7 @@ class MetaGen:
     def from_path(
         cls,
         path: Path,
-        mode: MetaGenSupportedLoadingModes = MetaGenSupportedLoadingModes.LAZY,
+        mode: MetaGenSupportedLoadingMode = MetaGenSupportedLoadingMode.LAZY,
         descriptions_path: Path | None = None,
         compute_metadata: bool = False,
     ) -> MetaGen:
@@ -103,22 +103,22 @@ class MetaGen:
             compute_metadata: Flag for computing metadata on instantiation.
         """
         mode_mapping = {
-            MetaGenSupportedLoadingModes.LAZY: LazyDataLoader,
-            MetaGenSupportedLoadingModes.EAGER: DataLoader,
+            MetaGenSupportedLoadingMode.LAZY: LazyDataLoader,
+            MetaGenSupportedLoadingMode.EAGER: DataLoader,
         }
         try:
             loader_class = mode_mapping[mode]
         except KeyError:
             raise LoadingModeUnsupportedError(
                 f"Mode {mode} is not supported. Supported modes are: "
-                f"{MetaGenSupportedLoadingModes.list()}"
+                f"{MetaGenSupportedLoadingMode.list()}"
             )
         data = loader_class(path)()
 
         if descriptions_path is not None:
             func_map = {
-                MetaGenSupportedFileExtensions.JSON.value: cls._load_descriptions_from_json,
-                MetaGenSupportedFileExtensions.CSV.value: cls._load_descriptions_from_csv,
+                MetaGenSupportedFileExtension.JSON.value: cls._load_descriptions_from_json,
+                MetaGenSupportedFileExtension.CSV.value: cls._load_descriptions_from_csv,
             }
             descriptions = func_map[descriptions_path.suffix](
                 descriptions_path
@@ -259,10 +259,10 @@ class MetaGen:
     ) -> dict[str, pd.DataFrame | dict[Hashable, Any]]:
         metadata = self.compute_metadata()
         return {
-            MetaGenSupportedFileExtensions.PARQUET.value: metadata,
-            MetaGenSupportedFileExtensions.CSV.value: metadata.reset_index(),
-            MetaGenSupportedFileExtensions.XLSX.value: metadata.reset_index(),
-            MetaGenSupportedFileExtensions.JSON.value: metadata.to_dict(
+            MetaGenSupportedFileExtension.PARQUET.value: metadata,
+            MetaGenSupportedFileExtension.CSV.value: metadata.reset_index(),
+            MetaGenSupportedFileExtension.XLSX.value: metadata.reset_index(),
+            MetaGenSupportedFileExtension.JSON.value: metadata.to_dict(
                 orient="index"
             ),
         }
@@ -464,7 +464,7 @@ class MetaGen:
             raise FileTypeUnsupportedError(
                 f"File type {outpath.suffix} not yet implemented. Only"
                 " supported file extensions:"
-                f" {MetaGenSupportedFileExtensions.list()}"
+                f" {MetaGenSupportedFileExtension.list()}"
             )
         write_metadata(outpath, metadata)
 
@@ -526,7 +526,7 @@ class MetaGen:
 
     def extract_data(
         self,
-        mode: MetaGenSupportedLoadingModes,
+        mode: MetaGenSupportedLoadingMode,
         inspection_mode: InspectionMode,
         tbl_rows: int = 10,
         random_seed: int | None = None,
@@ -617,7 +617,7 @@ class MetaGen:
             raise FileTypeUnsupportedError(
                 f"File type {outpath.suffix} not yet implemented. Only"
                 " supported file extensions:"
-                f" {MetaGenSupportedFileExtensions.list()}"
+                f" {MetaGenSupportedFileExtension.list()}"
             )
         write_metadata(outpath, data)
 

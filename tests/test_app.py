@@ -6,13 +6,13 @@ import pytest
 from click.testing import CliRunner
 
 from pymetagen.app import cli
-from pymetagen.datatypes import MetaGenSupportedLoadingModes
+from pymetagen.datatypes import MetaGenSupportedLoadingMode
 from pymetagen.utils import InspectionMode
 
 
 @pytest.mark.parametrize(
     "mode",
-    MetaGenSupportedLoadingModes.list(),
+    MetaGenSupportedLoadingMode.list(),
 )
 class TestCli:
     @pytest.mark.parametrize(
@@ -28,7 +28,7 @@ class TestCli:
         input_path: str,
         tmp_dir_path: Path,
         request: pytest.FixtureRequest,
-        mode: MetaGenSupportedLoadingModes,
+        mode: MetaGenSupportedLoadingMode,
     ) -> None:
         input_path = request.getfixturevalue(input_path)
         runner = CliRunner()
@@ -55,7 +55,7 @@ class TestCli:
         self,
         input_path: str,
         request: pytest.FixtureRequest,
-        mode: MetaGenSupportedLoadingModes,
+        mode: MetaGenSupportedLoadingMode,
     ) -> None:
         input_path = request.getfixturevalue(input_path)
         runner = CliRunner()
@@ -76,7 +76,7 @@ class TestCli:
         input_path: str,
         tmp_dir_path: Path,
         request: pytest.FixtureRequest,
-        mode: MetaGenSupportedLoadingModes,
+        mode: MetaGenSupportedLoadingMode,
     ) -> None:
         input_path = request.getfixturevalue(input_path)
         runner = CliRunner()
@@ -105,13 +105,13 @@ class TestCli:
         input_path: str,
         tmp_dir_path: Path,
         request: pytest.FixtureRequest,
-        mode: MetaGenSupportedLoadingModes,
+        mode: MetaGenSupportedLoadingMode,
     ) -> None:
         inpath: Path = request.getfixturevalue(input_path)
         runner = CliRunner()
         outpath = tmp_dir_path / "trial.csv"
         mode = (
-            MetaGenSupportedLoadingModes.EAGER
+            MetaGenSupportedLoadingMode.EAGER
             if inpath.suffix == ".xlsx"
             else mode
         )
@@ -160,7 +160,7 @@ class TestCli:
     def test_cli_filter_by_sql_query(
         self,
         tmp_dir_path: Path,
-        mode: MetaGenSupportedLoadingModes,
+        mode: MetaGenSupportedLoadingMode,
         sql_query: str,
     ) -> None:
         runner = CliRunner()

@@ -9,7 +9,7 @@ import pytest
 
 from pymetagen import MetaGen, json_metadata_to_pandas
 from pymetagen._typing import DataFrameT
-from pymetagen.datatypes import MetaGenSupportedLoadingModes
+from pymetagen.datatypes import MetaGenSupportedLoadingMode
 from pymetagen.exceptions import (
     FileTypeUnsupportedError,
     LoadingModeUnsupportedError,
@@ -204,7 +204,7 @@ class TestMetadataMethods:
 
 @pytest.mark.parametrize(
     "mode",
-    MetaGenSupportedLoadingModes.list(),
+    MetaGenSupportedLoadingMode.list(),
 )
 class TestMetaGenFromPath:
     @pytest.mark.parametrize(
@@ -214,7 +214,7 @@ class TestMetaGenFromPath:
     def test_from_path(
         self,
         path: str,
-        mode: MetaGenSupportedLoadingModes,
+        mode: MetaGenSupportedLoadingMode,
         request: pytest.FixtureRequest,
     ):
         file_path: Path = request.getfixturevalue(path)
@@ -226,7 +226,7 @@ class TestMetaGenFromPath:
     def test_unsupported_path(
         self,
         tmp_dir_path: Path,
-        mode: MetaGenSupportedLoadingModes,
+        mode: MetaGenSupportedLoadingMode,
     ):
         with pytest.raises(FileTypeUnsupportedError):
             MetaGen.from_path(
@@ -246,7 +246,7 @@ class TestMetaGenFromPath:
         descriptions_path: str,
         request: pytest.FixtureRequest,
         input_csv_path: Path,
-        mode: MetaGenSupportedLoadingModes,
+        mode: MetaGenSupportedLoadingMode,
     ):
         description_path: Path = request.getfixturevalue(descriptions_path)
 
@@ -281,7 +281,7 @@ def test_load_file_extension_none(
     with pytest.raises(FileTypeUnsupportedError):
         MetaGen.from_path(
             path=tmp_dir_path / "test",
-            mode=MetaGenSupportedLoadingModes.LAZY,
+            mode=MetaGenSupportedLoadingMode.LAZY,
         )
 
 
@@ -289,7 +289,7 @@ def test_file_extension_none_for_parquet_directories():
     path = Path("tests/data/input_ab_partition")
     MetaGen.from_path(
         path=path,
-        mode=MetaGenSupportedLoadingModes.LAZY,
+        mode=MetaGenSupportedLoadingMode.LAZY,
     )
 
 
@@ -298,7 +298,7 @@ def test_file_extension_none_for_directories_with_no_parquet_files():
     with pytest.raises(FileTypeUnsupportedError):
         MetaGen.from_path(
             path=path,
-            mode=MetaGenSupportedLoadingModes.LAZY,
+            mode=MetaGenSupportedLoadingMode.LAZY,
         )
 
 
@@ -311,11 +311,11 @@ class TestMetaGenExtractData:
     )
     @pytest.mark.parametrize(
         "mode",
-        MetaGenSupportedLoadingModes.list(),
+        MetaGenSupportedLoadingMode.list(),
     )
     def test_extract_data_inspect_mode_head(
         self,
-        mode: MetaGenSupportedLoadingModes,
+        mode: MetaGenSupportedLoadingMode,
         inspection_mode: InspectionMode,
     ):
         metagen = MetaGen.from_path(

@@ -6,7 +6,7 @@ from enum import Enum
 from pymetagen.utils import EnumListMixin
 
 
-class MetaGenSupportedLoadingModes(EnumListMixin, str, Enum):
+class MetaGenSupportedLoadingMode(EnumListMixin, str, Enum):
     """
     MetaGen supported loading modes.
     options: lazy, eager
@@ -16,12 +16,20 @@ class MetaGenSupportedLoadingModes(EnumListMixin, str, Enum):
     EAGER = "eager"
 
 
-class MetaGenSupportedFileExtensions(EnumListMixin, str, Enum):
+class MetaGenSupportedFileExtension(EnumListMixin, str, Enum):
     CSV = ".csv"
     JSON = ".json"
     PARQUET = ".parquet"
     XLSX = ".xlsx"
     NONE = ""
+
+    @classmethod
+    def writable_extension(
+        cls, extension: str
+    ) -> MetaGenSupportedFileExtension:
+        if extension:
+            return MetaGenSupportedFileExtension(extension)
+        raise ValueError("Extension cannot be empty.")
 
 
 class MetaGenDataType(str, Enum):

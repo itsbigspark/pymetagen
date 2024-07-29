@@ -17,7 +17,7 @@ from pymetagen._typing import DataFrameT
 if TYPE_CHECKING:
     from typing_extensions import Self
 
-    from pymetagen.datatypes import MetaGenSupportedLoadingModes
+    from pymetagen.datatypes import MetaGenSupportedLoadingMode
 
 
 class EnumListMixin:
@@ -113,7 +113,7 @@ def get_nested_path(
 
 def sample(
     df: DataFrameT,
-    mode: MetaGenSupportedLoadingModes,
+    mode: MetaGenSupportedLoadingMode,
     tbl_rows: int = 10,
     random_seed: int | None = None,
     with_replacement: bool = False,
@@ -149,13 +149,13 @@ def sample(
         )
     else:
         raise NotImplementedError(
-            f"mode must be one of {MetaGenSupportedLoadingModes.list()}"
+            f"mode must be one of {MetaGenSupportedLoadingMode.list()}"
         )
 
 
 def extract_data(
     df: DataFrameT,
-    mode: MetaGenSupportedLoadingModes,
+    mode: MetaGenSupportedLoadingMode,
     tbl_rows: int = 10,
     inspection_mode: InspectionMode = InspectionMode.head,
     random_seed: int | None = None,

@@ -13,7 +13,10 @@ from pprint import pprint
 import click
 
 from pymetagen import MetaGen, __version__
-from pymetagen.datatypes import MetaGenSupportedLoadingModes
+from pymetagen.datatypes import (
+    MetaGenSupportedFileExtension,
+    MetaGenSupportedLoadingMode,
+)
 from pymetagen.utils import InspectionMode, map_string_to_list_inspection_modes
 
 
@@ -121,7 +124,7 @@ def metadata(
     input: Path,
     output: Path | None,
     descriptions: Path | None,
-    mode: MetaGenSupportedLoadingModes,
+    mode: MetaGenSupportedLoadingMode,
     extra_formats: str | None,
     show_descriptions: bool,
     preview: bool,
@@ -278,7 +281,7 @@ def metadata(
 def inspect(
     input: Path,
     output: Path | None,
-    mode: MetaGenSupportedLoadingModes,
+    mode: MetaGenSupportedLoadingMode,
     number_rows: int,
     preview: bool,
     fmt_str_lengths: int,
@@ -404,7 +407,7 @@ def inspect(
 def extracts(
     input: Path,
     output: Path,
-    mode: MetaGenSupportedLoadingModes,
+    mode: MetaGenSupportedLoadingMode,
     number_rows: int,
     random_seed: int,
     with_replacement: bool,
@@ -419,29 +422,33 @@ def extracts(
     inspection_modes = map_string_to_list_inspection_modes(
         ignore_inspection_modes
     )
-    for im in inspection_modes:
-        data = metagen.extract_data(
-            mode=mode,
-            tbl_rows=number_rows,
-            inspection_mode=im,
-            random_seed=random_seed,
-            with_replacement=with_replacement,
+    formats_to_write = {
+        MetaGenSupportedFileExtension.writable_extension(output.suffix)
+    }
+    if extra_formats:
+        extra_format_enums = set(
+            map(
+                MetaGenSupportedFileExtension.writable_extension,
+                extra_formats.replace(" ", "").split(","),
+            )
         )
-        if extra_formats:
-            splitted_formats = extra_formats.split(",")
-            if output.suffix not in splitted_formats:
-                splitted_formats.append(output.suffix)
-            for output_format in splitted_formats:
-                out_path = output.with_suffix(output_format)
-                outpath = out_path.with_name(
-                    f"{out_path.stem}-{im}{out_path.suffix}"
-                )
-                click.echo(f"Writing extract in: {output}")
-                metagen.write_data(outpath=outpath, data=data)
-        else:
-            outpath = output.with_name(f"{output.stem}-{im}{output.suffix}")
-            click.echo(f"Writing extract in: {outpath}")
-            metagen.write_data(outpath=outpath, data=data)
+        formats_to_write = formats_to_write & extra_format_enums
+
+    for output_format in formats_to_write:
+        for inspection_mode in inspection_modes:
+            data = metagen.extract_data(
+                mode=mode,
+                tbl_rows=number_rows,
+                inspection_mode=inspection_mode,
+                random_seed=random_seed,
+                with_replacement=with_replacement,
+            )
+            path = output.with_suffix(str(output_format))
+            path = path.with_name(
+                f"{path.stem}-{inspection_mode}{path.suffix}"
+            )
+            click.echo(f"Writing extract in: {path}")
+            metagen.write_data(outpath=path, data=data)
 
 
 @click.command(
@@ -514,7 +521,7 @@ def filter(
     table_name: str | None,
     output: Path | None,
     query: str | Path,
-    mode: MetaGenSupportedLoadingModes,
+    mode: MetaGenSupportedLoadingMode,
     eager: bool,
     preview: bool,
 ) -> None:
