@@ -12,7 +12,7 @@ from pymetagen.utils import InspectionMode
 
 @pytest.mark.parametrize(
     "mode",
-    MetaGenSupportedLoadingMode.list(),
+    MetaGenSupportedLoadingMode.values(),
 )
 class TestCli:
     @pytest.mark.parametrize(
@@ -130,15 +130,17 @@ class TestCli:
 
         assert result.exit_code == 0
 
-        for im in InspectionMode.list():
+        for inspection_mode in InspectionMode.values():
             assert outpath.with_name(
-                f"{outpath.stem}-{im}{outpath.suffix}"
+                f"{outpath.stem}-{inspection_mode}{outpath.suffix}"
             ).exists()
             assert outpath.with_name(
-                f"{outpath.stem}-{im}{outpath.suffix}"
+                f"{outpath.stem}-{inspection_mode}{outpath.suffix}"
             ).is_file()
             assert (
-                outpath.with_name(f"{outpath.stem}-{im}{outpath.suffix}")
+                outpath.with_name(
+                    f"{outpath.stem}-{inspection_mode}{outpath.suffix}"
+                )
                 .stat()
                 .st_size
                 > 0

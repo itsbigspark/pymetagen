@@ -23,6 +23,16 @@ if TYPE_CHECKING:
 class EnumListMixin:
     @classmethod
     def list(cls) -> list[Self]:
+        """
+        List all available enum attributes.
+        """
+        return list(map(lambda c: c, cls))  # type: ignore
+
+    @classmethod
+    def values(cls) -> list[str]:
+        """
+        Get the values of the enum.
+        """
         return list(map(lambda c: c.value, cls))  # type: ignore
 
 
@@ -118,6 +128,7 @@ def sample(
     random_seed: int | None = None,
     with_replacement: bool = False,
 ) -> DataFrameT:
+
     if mode == "eager":
         assert isinstance(df, pl.DataFrame)
         row_depth = df.height
@@ -166,7 +177,7 @@ def extract_data(
     """
     if inspection_mode not in InspectionMode.list():
         raise NotImplementedError(
-            f"inspection_mode must be one of {InspectionMode.list()}"
+            f"inspection_mode must be one of {InspectionMode.values()}"
         )
     if inspection_mode == InspectionMode.sample:
         df = df.pipe(sample, mode, tbl_rows, random_seed, with_replacement)

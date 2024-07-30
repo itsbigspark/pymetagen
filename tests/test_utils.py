@@ -41,7 +41,7 @@ class TestMetaGenUtils:
 
 
 def test_inspection_modes_enums():
-    assert InspectionMode.list() == ["head", "tail", "sample"]
+    assert InspectionMode.values() == ["head", "tail", "sample"]
     assert InspectionMode.head == "head"
     assert InspectionMode.head.value == "head"
     assert InspectionMode.list() == list(

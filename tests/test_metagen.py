@@ -204,7 +204,7 @@ class TestMetadataMethods:
 
 @pytest.mark.parametrize(
     "mode",
-    MetaGenSupportedLoadingMode.list(),
+    MetaGenSupportedLoadingMode.values(),
 )
 class TestMetaGenFromPath:
     @pytest.mark.parametrize(
@@ -313,7 +313,7 @@ class TestMetaGenExtractData:
         "mode",
         MetaGenSupportedLoadingMode.list(),
     )
-    def test_extract_data_inspect_mode_head(
+    def test_extract_data_inspect_mode(
         self,
         mode: MetaGenSupportedLoadingMode,
         inspection_mode: InspectionMode,
@@ -328,3 +328,51 @@ class TestMetaGenExtractData:
 
         assert extract.shape[0] == 2
         assert isinstance(extract, pl.DataFrame)
+
+
+class TestMetaGenWriteExtracts:
+
+    @pytest.mark.parametrize(
+        "mode",
+        MetaGenSupportedLoadingMode.list(),
+    )
+    @pytest.mark.parametrize(
+        "inspection_mode",
+        InspectionMode.list(),
+    )
+    def test_write_extract_by_inspection_mode(
+        self,
+        tmp_dir_path,
+        inspection_mode: InspectionMode,
+        mode: MetaGenSupportedLoadingMode,
+    ):
+        metagen = MetaGen.from_path(
+            path=Path("tests/data/input_ab_partition.parquet"),
+            mode=mode,
+        )
+        file_name = f"test-{inspection_mode}.csv"
+        metagen.write_extract_by_inspection_mode(
+            output_path=tmp_dir_path / file_name,
+            mode=mode,
+            inspection_mode=inspection_mode,
+            random_seed=None,
+            number_rows=2,
+            with_replacement=False,
+        )
+
+        assert (tmp_dir_path / file_name).exists()
+        assert (tmp_dir_path / file_name).is_file()
+
+    def test_write_extracts(
+        self,
+        tmp_dir_path: Path,
+    ):
+        metagen = MetaGen.from_path(
+            path=Path("tests/data/input_ab_partition.parquet"),
+            mode=MetaGenSupportedLoadingMode.EAGER,
+        )
+        metagen.write_extracts(
+            output_path=tmp_dir_path / "test.csv",
+            number_rows=2,
+            random_seed=None,
+        )

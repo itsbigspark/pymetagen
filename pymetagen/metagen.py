@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+from collections.abc import Sequence
 from functools import cached_property
 from pathlib import Path
 
@@ -111,7 +112,7 @@ class MetaGen:
         except KeyError:
             raise LoadingModeUnsupportedError(
                 f"Mode {mode} is not supported. Supported modes are: "
-                f"{MetaGenSupportedLoadingMode.list()}"
+                f"{MetaGenSupportedLoadingMode.values()}"
             )
         data = loader_class(path)()
 
@@ -464,7 +465,7 @@ class MetaGen:
             raise FileTypeUnsupportedError(
                 f"File type {outpath.suffix} not yet implemented. Only"
                 " supported file extensions:"
-                f" {MetaGenSupportedFileExtension.list()}"
+                f" {MetaGenSupportedFileExtension.values()}"
             )
         write_metadata(outpath, metadata)
 
@@ -498,6 +499,54 @@ class MetaGen:
                 ensure_ascii=False,
                 cls=CustomEncoder,
             )
+
+    def write_extracts(
+        self,
+        output_path: Path,
+        random_seed: int | None = None,
+        number_rows: int = 10,
+        with_replacement: bool = False,
+        inspection_modes: Sequence[InspectionMode] | None = None,
+        formats_to_write: set[MetaGenSupportedFileExtension] | None = None,
+        mode: MetaGenSupportedLoadingMode = MetaGenSupportedLoadingMode.LAZY,
+    ) -> None:
+
+        inspection_modes = inspection_modes or [InspectionMode.head]
+        formats_to_write = formats_to_write or {
+            MetaGenSupportedFileExtension(output_path.suffix)
+        }
+        for inspection_mode in inspection_modes:
+            for output_format in formats_to_write:
+                path = output_path.with_suffix(output_format)
+                path = path.with_name(
+                    f"{path.stem}-{inspection_mode.value}{path.suffix}"
+                )
+                self.write_extract_by_inspection_mode(
+                    output_path=path,
+                    mode=mode,
+                    inspection_mode=inspection_mode,
+                    random_seed=random_seed,
+                    number_rows=number_rows,
+                    with_replacement=with_replacement,
+                )
+
+    def write_extract_by_inspection_mode(
+        self,
+        output_path: Path,
+        mode: MetaGenSupportedLoadingMode,
+        inspection_mode: InspectionMode,
+        random_seed: int | None,
+        number_rows: int,
+        with_replacement: bool,
+    ) -> None:
+        data = self.extract_data(
+            mode=mode,
+            tbl_rows=number_rows,
+            inspection_mode=inspection_mode,
+            random_seed=random_seed,
+            with_replacement=with_replacement,
+        )
+        self.write_data(outpath=output_path, data=data)
 
     def _write_parquet_metadata(
         self, output_path: str, metadata: pd.DataFrame | None
@@ -612,14 +661,14 @@ class MetaGen:
         }
 
         try:
-            write_metadata = output_type_mapping[outpath.suffix]
+            write_data = output_type_mapping[outpath.suffix]
         except KeyError:
             raise FileTypeUnsupportedError(
                 f"File type {outpath.suffix} not yet implemented. Only"
                 " supported file extensions:"
-                f" {MetaGenSupportedFileExtension.list()}"
+                f" {MetaGenSupportedFileExtension.values()}"
             )
-        write_metadata(outpath, data)
+        write_data(outpath, data)
 
     def _write_csv_data(
         self, output_path: Path | str, data: DataFrameT | None

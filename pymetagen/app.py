@@ -434,21 +434,15 @@ def extracts(
         )
         formats_to_write = formats_to_write & extra_format_enums
 
-    for output_format in formats_to_write:
-        for inspection_mode in inspection_modes:
-            data = metagen.extract_data(
-                mode=mode,
-                tbl_rows=number_rows,
-                inspection_mode=inspection_mode,
-                random_seed=random_seed,
-                with_replacement=with_replacement,
-            )
-            path = output.with_suffix(str(output_format))
-            path = path.with_name(
-                f"{path.stem}-{inspection_mode}{path.suffix}"
-            )
-            click.echo(f"Writing extract in: {path}")
-            metagen.write_data(outpath=path, data=data)
+    metagen.write_extracts(
+        output_path=output,
+        number_rows=number_rows,
+        random_seed=random_seed,
+        with_replacement=with_replacement,
+        inspection_modes=inspection_modes,
+        formats_to_write=formats_to_write,
+        mode=MetaGenSupportedLoadingMode(mode),
+    )
 
 
 @click.command(
