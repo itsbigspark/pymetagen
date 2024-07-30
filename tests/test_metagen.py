@@ -173,20 +173,28 @@ class TestMetadataMethods:
         self, df_constructor: Callable, eager: bool, return_type: DataFrameT
     ):
         df = pl.DataFrame(
-            data=[
-                ("The Godfather", 1972, 6_000_000, 134_821_952, 9.2),
-                ("The Dark Knight", 2008, 185_000_000, 533_316_061, 9.0),
-                ("Schindler's List", 1993, 22_000_000, 96_067_179, 8.9),
-                ("Pulp Fiction", 1994, 8_000_000, 107_930_000, 8.9),
-                (
-                    "The Shawshank Redemption",
-                    1994,
-                    25_000_000,
-                    28_341_469,
-                    9.3,
+            data=list(
+                zip(
+                    ("The Godfather", 1972, 6_000_000, 134_821_952, 9.2),
+                    ("The Dark Knight", 2008, 185_000_000, 533_316_061, 9.0),
+                    ("Schindler's List", 1993, 22_000_000, 96_067_179, 8.9),
+                    ("Pulp Fiction", 1994, 8_000_000, 107_930_000, 8.9),
+                    (
+                        "The Shawshank Redemption",
+                        1994,
+                        25_000_000,
+                        28_341_469,
+                        9.3,
+                    ),
                 ),
+            ),
+            schema=[
+                ("title", str),
+                ("release_year", int),
+                ("budget", int),
+                ("gross", int),
+                ("imdb_score", float),
             ],
-            schema=["title", "release_year", "budget", "gross", "imdb_score"],
         )
 
         metagen = MetaGen(data=df)
