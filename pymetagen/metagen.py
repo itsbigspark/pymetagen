@@ -511,7 +511,7 @@ class MetaGen:
         mode: MetaGenSupportedLoadingMode = MetaGenSupportedLoadingMode.LAZY,
     ) -> None:
 
-        inspection_modes = inspection_modes or [InspectionMode.head]
+        inspection_modes = inspection_modes or InspectionMode.list()
         formats_to_write = formats_to_write or {
             MetaGenSupportedFileExtension(output_path.suffix)
         }

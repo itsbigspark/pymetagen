@@ -363,16 +363,25 @@ class TestMetaGenWriteExtracts:
         assert (tmp_dir_path / file_name).exists()
         assert (tmp_dir_path / file_name).is_file()
 
+    @pytest.mark.parametrize(
+        "mode",
+        MetaGenSupportedLoadingMode.list(),
+    )
     def test_write_extracts(
         self,
         tmp_dir_path: Path,
+        mode: MetaGenSupportedLoadingMode,
     ):
         metagen = MetaGen.from_path(
-            path=Path("tests/data/input_ab_partition.parquet"),
-            mode=MetaGenSupportedLoadingMode.EAGER,
+            path=Path("tests/data/input_ab_partition.parquet"), mode=mode
         )
         metagen.write_extracts(
             output_path=tmp_dir_path / "test.csv",
             number_rows=2,
-            random_seed=None,
+            mode=mode,
         )
+        for inspection_mode in InspectionMode.values():
+            file_name = f"test-{inspection_mode}.csv"
+            assert (tmp_dir_path / file_name).exists()
+            assert (tmp_dir_path / file_name).is_file()
+            assert (tmp_dir_path / file_name).stat().st_size > 0
