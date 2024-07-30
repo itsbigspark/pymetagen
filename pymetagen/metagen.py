@@ -355,7 +355,7 @@ class MetaGen:
                     self.data.with_columns(
                         pl.col(col)
                         .cast(pl.Utf8)
-                        .str.lengths()
+                        .str.len_bytes()
                         .alias(f"{col}_len")
                     )
                     .select(f"{col}_len")
@@ -377,7 +377,7 @@ class MetaGen:
                     self.data.with_columns(
                         pl.col(col)
                         .cast(pl.Utf8)
-                        .str.lengths()
+                        .str.len_bytes()
                         .alias(f"{col}_len")
                     )
                     .select(f"{col}_len")
