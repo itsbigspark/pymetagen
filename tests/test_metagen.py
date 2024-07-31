@@ -9,7 +9,7 @@ import pytest
 
 from pymetagen import MetaGen, json_metadata_to_pandas
 from pymetagen._typing import DataFrameT
-from pymetagen.datatypes import MetaGenSupportedLoadingModes
+from pymetagen.datatypes import MetaGenSupportedLoadingMode
 from pymetagen.exceptions import (
     FileTypeUnsupportedError,
     LoadingModeUnsupportedError,
@@ -212,7 +212,7 @@ class TestMetadataMethods:
 
 @pytest.mark.parametrize(
     "mode",
-    MetaGenSupportedLoadingModes.list(),
+    MetaGenSupportedLoadingMode.values(),
 )
 class TestMetaGenFromPath:
     @pytest.mark.parametrize(
@@ -222,7 +222,7 @@ class TestMetaGenFromPath:
     def test_from_path(
         self,
         path: str,
-        mode: MetaGenSupportedLoadingModes,
+        mode: MetaGenSupportedLoadingMode,
         request: pytest.FixtureRequest,
     ):
         file_path: Path = request.getfixturevalue(path)
@@ -234,7 +234,7 @@ class TestMetaGenFromPath:
     def test_unsupported_path(
         self,
         tmp_dir_path: Path,
-        mode: MetaGenSupportedLoadingModes,
+        mode: MetaGenSupportedLoadingMode,
     ):
         with pytest.raises(FileTypeUnsupportedError):
             MetaGen.from_path(
@@ -254,7 +254,7 @@ class TestMetaGenFromPath:
         descriptions_path: str,
         request: pytest.FixtureRequest,
         input_csv_path: Path,
-        mode: MetaGenSupportedLoadingModes,
+        mode: MetaGenSupportedLoadingMode,
     ):
         description_path: Path = request.getfixturevalue(descriptions_path)
 
@@ -289,7 +289,7 @@ def test_load_file_extension_none(
     with pytest.raises(FileTypeUnsupportedError):
         MetaGen.from_path(
             path=tmp_dir_path / "test",
-            mode=MetaGenSupportedLoadingModes.LAZY,
+            mode=MetaGenSupportedLoadingMode.LAZY,
         )
 
 
@@ -297,7 +297,7 @@ def test_file_extension_none_for_parquet_directories():
     path = Path("tests/data/input_ab_partition")
     MetaGen.from_path(
         path=path,
-        mode=MetaGenSupportedLoadingModes.LAZY,
+        mode=MetaGenSupportedLoadingMode.LAZY,
     )
 
 
@@ -306,7 +306,7 @@ def test_file_extension_none_for_directories_with_no_parquet_files():
     with pytest.raises(FileTypeUnsupportedError):
         MetaGen.from_path(
             path=path,
-            mode=MetaGenSupportedLoadingModes.LAZY,
+            mode=MetaGenSupportedLoadingMode.LAZY,
         )
 
 
@@ -319,11 +319,11 @@ class TestMetaGenExtractData:
     )
     @pytest.mark.parametrize(
         "mode",
-        MetaGenSupportedLoadingModes.list(),
+        MetaGenSupportedLoadingMode.list(),
     )
-    def test_extract_data_inspect_mode_head(
+    def test_extract_data_inspect_mode(
         self,
-        mode: MetaGenSupportedLoadingModes,
+        mode: MetaGenSupportedLoadingMode,
         inspection_mode: InspectionMode,
     ):
         metagen = MetaGen.from_path(
@@ -336,3 +336,60 @@ class TestMetaGenExtractData:
 
         assert extract.shape[0] == 2
         assert isinstance(extract, pl.DataFrame)
+
+
+class TestMetaGenWriteExtracts:
+
+    @pytest.mark.parametrize(
+        "mode",
+        MetaGenSupportedLoadingMode.list(),
+    )
+    @pytest.mark.parametrize(
+        "inspection_mode",
+        InspectionMode.list(),
+    )
+    def test_write_extract_by_inspection_mode(
+        self,
+        tmp_dir_path,
+        inspection_mode: InspectionMode,
+        mode: MetaGenSupportedLoadingMode,
+    ):
+        metagen = MetaGen.from_path(
+            path=Path("tests/data/input_ab_partition.parquet"),
+            mode=mode,
+        )
+        file_name = f"test-{inspection_mode}.csv"
+        metagen.write_extract_by_inspection_mode(
+            output_path=tmp_dir_path / file_name,
+            mode=mode,
+            inspection_mode=inspection_mode,
+            random_seed=None,
+            number_rows=2,
+            with_replacement=False,
+        )
+
+        assert (tmp_dir_path / file_name).exists()
+        assert (tmp_dir_path / file_name).is_file()
+
+    @pytest.mark.parametrize(
+        "mode",
+        MetaGenSupportedLoadingMode.list(),
+    )
+    def test_write_extracts(
+        self,
+        tmp_dir_path: Path,
+        mode: MetaGenSupportedLoadingMode,
+    ):
+        metagen = MetaGen.from_path(
+            path=Path("tests/data/input_ab_partition.parquet"), mode=mode
+        )
+        metagen.write_extracts(
+            output_path=tmp_dir_path / "test.csv",
+            number_rows=2,
+            mode=mode,
+        )
+        for inspection_mode in InspectionMode.values():
+            file_name = f"test-{inspection_mode}.csv"
+            assert (tmp_dir_path / file_name).exists()
+            assert (tmp_dir_path / file_name).is_file()
+            assert (tmp_dir_path / file_name).stat().st_size > 0

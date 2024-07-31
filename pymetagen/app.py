@@ -13,8 +13,11 @@ from pprint import pprint
 import click
 
 from pymetagen import MetaGen, __version__
-from pymetagen.datatypes import MetaGenSupportedLoadingModes
-from pymetagen.utils import InspectionMode
+from pymetagen.datatypes import (
+    MetaGenSupportedFileExtension,
+    MetaGenSupportedLoadingMode,
+)
+from pymetagen.utils import InspectionMode, map_string_to_list_inspection_modes
 
 
 @click.group(
@@ -121,7 +124,7 @@ def metadata(
     input: Path,
     output: Path | None,
     descriptions: Path | None,
-    mode: MetaGenSupportedLoadingModes,
+    mode: MetaGenSupportedLoadingMode,
     extra_formats: str | None,
     show_descriptions: bool,
     preview: bool,
@@ -278,7 +281,7 @@ def metadata(
 def inspect(
     input: Path,
     output: Path | None,
-    mode: MetaGenSupportedLoadingModes,
+    mode: MetaGenSupportedLoadingMode,
     number_rows: int,
     preview: bool,
     fmt_str_lengths: int,
@@ -404,52 +407,42 @@ def inspect(
 def extracts(
     input: Path,
     output: Path,
-    mode: MetaGenSupportedLoadingModes,
+    mode: MetaGenSupportedLoadingMode,
     number_rows: int,
     random_seed: int,
     with_replacement: bool,
     extra_formats: str | None,
-    ignore_inspection_modes: InspectionMode,
+    ignore_inspection_modes: str | None,
 ) -> None:
     """
     A tool to extract n number of rows from a data set. It can extract
     head, tail, random sample at the same time.
     """
     metagen = MetaGen.from_path(path=input, mode=mode)
-    selected_ignore_inspection_modes = (
-        ignore_inspection_modes.split(",")
-        if ignore_inspection_modes is not None
-        else []
+    inspection_modes = map_string_to_list_inspection_modes(
+        ignore_inspection_modes
     )
-    inspection_modes: list[InspectionMode] = [
-        im
-        for im in InspectionMode.list()
-        if im not in selected_ignore_inspection_modes
-    ]
-
-    for im in inspection_modes:
-        data = metagen.extract_data(
-            mode=mode,
-            tbl_rows=number_rows,
-            inspection_mode=im,
-            random_seed=random_seed,
-            with_replacement=with_replacement,
+    formats_to_write = {
+        MetaGenSupportedFileExtension.writable_extension(output.suffix)
+    }
+    if extra_formats:
+        extra_format_enums = set(
+            map(
+                MetaGenSupportedFileExtension.writable_extension,
+                extra_formats.replace(" ", "").split(","),
+            )
         )
-        if extra_formats:
-            splitted_formats = extra_formats.split(",")
-            if output.suffix not in splitted_formats:
-                splitted_formats.append(output.suffix)
-            for output_format in splitted_formats:
-                out_path = output.with_suffix(output_format)
-                outpath = out_path.with_name(
-                    f"{out_path.stem}-{im}{out_path.suffix}"
-                )
-                click.echo(f"Writing extract in: {output}")
-                metagen.write_data(outpath=outpath, data=data)
-        else:
-            outpath = output.with_name(f"{output.stem}-{im}{output.suffix}")
-            click.echo(f"Writing extract in: {outpath}")
-            metagen.write_data(outpath=outpath, data=data)
+        formats_to_write = formats_to_write & extra_format_enums
+    click.echo("Writing extracts...")
+    metagen.write_extracts(
+        output_path=output,
+        number_rows=number_rows,
+        random_seed=random_seed,
+        with_replacement=with_replacement,
+        inspection_modes=inspection_modes,
+        formats_to_write=formats_to_write,
+        mode=MetaGenSupportedLoadingMode(mode),
+    )
 
 
 @click.command(
@@ -522,7 +515,7 @@ def filter(
     table_name: str | None,
     output: Path | None,
     query: str | Path,
-    mode: MetaGenSupportedLoadingModes,
+    mode: MetaGenSupportedLoadingMode,
     eager: bool,
     preview: bool,
 ) -> None:

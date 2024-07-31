@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import json
 import os
+from collections.abc import Sequence
 from enum import Enum
 from glob import glob
 from pathlib import Path
@@ -14,12 +15,24 @@ import polars as pl
 from pymetagen._typing import DataFrameT
 
 if TYPE_CHECKING:
-    from pymetagen.datatypes import MetaGenSupportedLoadingModes
+    from typing_extensions import Self
+
+    from pymetagen.datatypes import MetaGenSupportedLoadingMode
 
 
 class EnumListMixin:
     @classmethod
-    def list(cls) -> list[str]:
+    def list(cls) -> list[Self]:
+        """
+        List all available enum attributes.
+        """
+        return list(map(lambda c: c, cls))  # type: ignore
+
+    @classmethod
+    def values(cls) -> list[str]:
+        """
+        Get the values of the enum.
+        """
         return list(map(lambda c: c.value, cls))  # type: ignore
 
 
@@ -110,11 +123,12 @@ def get_nested_path(
 
 def sample(
     df: DataFrameT,
-    mode: MetaGenSupportedLoadingModes,
+    mode: MetaGenSupportedLoadingMode,
     tbl_rows: int = 10,
     random_seed: int | None = None,
     with_replacement: bool = False,
 ) -> DataFrameT:
+
     if mode == "eager":
         assert isinstance(df, pl.DataFrame)
         row_depth = df.height
@@ -146,13 +160,13 @@ def sample(
         )
     else:
         raise NotImplementedError(
-            f"mode must be one of {MetaGenSupportedLoadingModes.list()}"
+            f"mode must be one of {MetaGenSupportedLoadingMode.list()}"
         )
 
 
 def extract_data(
     df: DataFrameT,
-    mode: MetaGenSupportedLoadingModes,
+    mode: MetaGenSupportedLoadingMode,
     tbl_rows: int = 10,
     inspection_mode: InspectionMode = InspectionMode.head,
     random_seed: int | None = None,
@@ -163,7 +177,7 @@ def extract_data(
     """
     if inspection_mode not in InspectionMode.list():
         raise NotImplementedError(
-            f"inspection_mode must be one of {InspectionMode.list()}"
+            f"inspection_mode must be one of {InspectionMode.values()}"
         )
     if inspection_mode == InspectionMode.sample:
         df = df.pipe(sample, mode, tbl_rows, random_seed, with_replacement)
@@ -190,3 +204,57 @@ class CustomEncoder(json.JSONEncoder):
         if isinstance(obj, Enum):
             return str(obj)
         return json.JSONEncoder.default(self, obj)
+
+
+def map_inspection_modes(
+    inspection_modes: Sequence[str],
+) -> Sequence[InspectionMode]:
+    """
+    Map inspection modes to InspectionMode enum. If the inspection mode is not
+    supported, raise an error.  Supported inspection modes are head, tail, and
+    sample.
+
+    Args:
+        inspection_modes: list of inspection modes as strings
+
+    Returns:
+        list of InspectionMode enums
+    """
+    if not all(
+        inspection_mode in InspectionMode.list()
+        for inspection_mode in inspection_modes
+    ):
+        raise ValueError(
+            f"inspection_modes must be one of {InspectionMode.list()}"
+        )
+
+    return [
+        InspectionMode(inspection_mode) for inspection_mode in inspection_modes
+    ]
+
+
+def map_string_to_list_inspection_modes(
+    inspection_modes: str | None,
+) -> Sequence[InspectionMode]:
+    """
+    Map inspection modes to a list of InspectionMode enum.
+    If the inspection mode is not supported, raise an error.
+    Supported inspection modes are head, tail, and sample.
+    In case the inspection_modes is None, return all InspectionMode enums.
+
+
+    Args:
+        inspection_modes: list of inspection modes as strings separated
+        by commas
+
+    Returns:
+        list of InspectionMode enums
+    """
+    if inspection_modes is None:
+        return InspectionMode.list()
+    list_of_ignored_inspection_modes = inspection_modes.replace(" ", "").split(
+        ","
+    )
+    return map_inspection_modes(
+        inspection_modes=list_of_ignored_inspection_modes
+    )

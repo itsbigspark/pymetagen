@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+from collections.abc import Sequence
 from functools import cached_property
 from pathlib import Path
 
@@ -20,8 +21,8 @@ from pymetagen._typing import Any, DataFrameT, Hashable
 from pymetagen.dataloader import DataLoader, LazyDataLoader
 from pymetagen.datatypes import (
     MetaGenDataType,
-    MetaGenSupportedFileExtensions,
-    MetaGenSupportedLoadingModes,
+    MetaGenSupportedFileExtension,
+    MetaGenSupportedLoadingMode,
     dtype_to_metagen_type,
 )
 from pymetagen.exceptions import (
@@ -66,7 +67,7 @@ class MetaGen:
     def from_path(
         cls,
         path: Path,
-        mode: MetaGenSupportedLoadingModes = MetaGenSupportedLoadingModes.LAZY,
+        mode: MetaGenSupportedLoadingMode = MetaGenSupportedLoadingMode.LAZY,
         descriptions_path: Path | None = None,
         compute_metadata: bool = False,
     ) -> MetaGen:
@@ -103,22 +104,22 @@ class MetaGen:
             compute_metadata: Flag for computing metadata on instantiation.
         """
         mode_mapping = {
-            MetaGenSupportedLoadingModes.LAZY: LazyDataLoader,
-            MetaGenSupportedLoadingModes.EAGER: DataLoader,
+            MetaGenSupportedLoadingMode.LAZY: LazyDataLoader,
+            MetaGenSupportedLoadingMode.EAGER: DataLoader,
         }
         try:
             loader_class = mode_mapping[mode]
         except KeyError:
             raise LoadingModeUnsupportedError(
                 f"Mode {mode} is not supported. Supported modes are: "
-                f"{MetaGenSupportedLoadingModes.list()}"
+                f"{MetaGenSupportedLoadingMode.values()}"
             )
         data = loader_class(path)()
 
         if descriptions_path is not None:
             func_map = {
-                MetaGenSupportedFileExtensions.JSON.value: cls._load_descriptions_from_json,
-                MetaGenSupportedFileExtensions.CSV.value: cls._load_descriptions_from_csv,
+                MetaGenSupportedFileExtension.JSON.value: cls._load_descriptions_from_json,
+                MetaGenSupportedFileExtension.CSV.value: cls._load_descriptions_from_csv,
             }
             descriptions = func_map[descriptions_path.suffix](
                 descriptions_path
@@ -259,10 +260,10 @@ class MetaGen:
     ) -> dict[str, pd.DataFrame | dict[Hashable, Any]]:
         metadata = self.compute_metadata()
         return {
-            MetaGenSupportedFileExtensions.PARQUET.value: metadata,
-            MetaGenSupportedFileExtensions.CSV.value: metadata.reset_index(),
-            MetaGenSupportedFileExtensions.XLSX.value: metadata.reset_index(),
-            MetaGenSupportedFileExtensions.JSON.value: metadata.to_dict(
+            MetaGenSupportedFileExtension.PARQUET.value: metadata,
+            MetaGenSupportedFileExtension.CSV.value: metadata.reset_index(),
+            MetaGenSupportedFileExtension.XLSX.value: metadata.reset_index(),
+            MetaGenSupportedFileExtension.JSON.value: metadata.to_dict(
                 orient="index"
             ),
         }
@@ -312,7 +313,7 @@ class MetaGen:
             null_count = data.null_count().row(0)[0]
             zero_count = (
                 data.filter(pl.col(col) == 0).shape[0]
-                if types[col] in MetaGenDataType.numeric_data_types
+                if types[col] in MetaGenDataType.numeric_data_types()
                 else 0
             )
             nulls[col] = zero_count + null_count
@@ -325,7 +326,7 @@ class MetaGen:
         for col in self.data.columns:
             pos_count = (
                 self.data.filter(pl.col(col) > 0).pipe(collect).shape[0]
-                if types[col] in MetaGenDataType.numeric_data_types
+                if types[col] in MetaGenDataType.numeric_data_types()
                 else None
             )
             pos[col] = pos_count
@@ -338,7 +339,7 @@ class MetaGen:
         for col in self.data.columns:
             neg_count = (
                 self.data.filter(pl.col(col) < 0).pipe(collect).shape[0]
-                if types[col] in MetaGenDataType.numeric_data_types
+                if types[col] in MetaGenDataType.numeric_data_types()
                 else None
             )
             neg[col] = neg_count
@@ -349,12 +350,12 @@ class MetaGen:
     ) -> dict[str, int | None]:
         min_str_length = {}
         for col in self.data.columns:
-            if types[col] in MetaGenDataType.categorical_data_types:
+            if types[col] in MetaGenDataType.categorical_data_types():
                 min_str_length[col] = (
                     self.data.with_columns(
                         pl.col(col)
                         .cast(pl.Utf8)
-                        .str.lengths()
+                        .str.len_bytes()
                         .alias(f"{col}_len")
                     )
                     .select(f"{col}_len")
@@ -371,12 +372,12 @@ class MetaGen:
     ) -> dict[str, int | None]:
         max_str_length = {}
         for col in self.data.columns:
-            if types[col] in MetaGenDataType.categorical_data_types:
+            if types[col] in MetaGenDataType.categorical_data_types():
                 max_str_length[col] = (
                     self.data.with_columns(
                         pl.col(col)
                         .cast(pl.Utf8)
-                        .str.lengths()
+                        .str.len_bytes()
                         .alias(f"{col}_len")
                     )
                     .select(f"{col}_len")
@@ -464,7 +465,7 @@ class MetaGen:
             raise FileTypeUnsupportedError(
                 f"File type {outpath.suffix} not yet implemented. Only"
                 " supported file extensions:"
-                f" {MetaGenSupportedFileExtensions.list()}"
+                f" {MetaGenSupportedFileExtension.values()}"
             )
         write_metadata(outpath, metadata)
 
@@ -499,6 +500,54 @@ class MetaGen:
                 cls=CustomEncoder,
             )
 
+    def write_extracts(
+        self,
+        output_path: Path,
+        random_seed: int | None = None,
+        number_rows: int = 10,
+        with_replacement: bool = False,
+        inspection_modes: Sequence[InspectionMode] | None = None,
+        formats_to_write: set[MetaGenSupportedFileExtension] | None = None,
+        mode: MetaGenSupportedLoadingMode = MetaGenSupportedLoadingMode.LAZY,
+    ) -> None:
+
+        inspection_modes = inspection_modes or InspectionMode.list()
+        formats_to_write = formats_to_write or {
+            MetaGenSupportedFileExtension(output_path.suffix)
+        }
+        for inspection_mode in inspection_modes:
+            for output_format in formats_to_write:
+                path = output_path.with_suffix(output_format)
+                path = path.with_name(
+                    f"{path.stem}-{inspection_mode.value}{path.suffix}"
+                )
+                self.write_extract_by_inspection_mode(
+                    output_path=path,
+                    mode=mode,
+                    inspection_mode=inspection_mode,
+                    random_seed=random_seed,
+                    number_rows=number_rows,
+                    with_replacement=with_replacement,
+                )
+
+    def write_extract_by_inspection_mode(
+        self,
+        output_path: Path,
+        mode: MetaGenSupportedLoadingMode,
+        inspection_mode: InspectionMode,
+        random_seed: int | None,
+        number_rows: int,
+        with_replacement: bool,
+    ) -> None:
+        data = self.extract_data(
+            mode=mode,
+            tbl_rows=number_rows,
+            inspection_mode=inspection_mode,
+            random_seed=random_seed,
+            with_replacement=with_replacement,
+        )
+        self.write_data(outpath=output_path, data=data)
+
     def _write_parquet_metadata(
         self, output_path: str, metadata: pd.DataFrame | None
     ) -> None:
@@ -526,7 +575,7 @@ class MetaGen:
 
     def extract_data(
         self,
-        mode: MetaGenSupportedLoadingModes,
+        mode: MetaGenSupportedLoadingMode,
         inspection_mode: InspectionMode,
         tbl_rows: int = 10,
         random_seed: int | None = None,
@@ -612,14 +661,14 @@ class MetaGen:
         }
 
         try:
-            write_metadata = output_type_mapping[outpath.suffix]
+            write_data = output_type_mapping[outpath.suffix]
         except KeyError:
             raise FileTypeUnsupportedError(
                 f"File type {outpath.suffix} not yet implemented. Only"
                 " supported file extensions:"
-                f" {MetaGenSupportedFileExtensions.list()}"
+                f" {MetaGenSupportedFileExtension.values()}"
             )
-        write_metadata(outpath, data)
+        write_data(outpath, data)
 
     def _write_csv_data(
         self, output_path: Path | str, data: DataFrameT | None

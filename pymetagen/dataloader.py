@@ -13,7 +13,7 @@ import polars as pl
 from polars.datatypes.constants import N_INFER_DEFAULT
 
 from pymetagen._typing import DataFrameT
-from pymetagen.datatypes import MetaGenSupportedFileExtensions
+from pymetagen.datatypes import MetaGenSupportedFileExtension
 from pymetagen.exceptions import FileTypeUnsupportedError
 from pymetagen.utils import get_nested_path, selectively_update_dict
 
@@ -103,14 +103,14 @@ class DataLoader:
         self,
     ) -> DataFrameT:
         extension_mapping = {
-            MetaGenSupportedFileExtensions.CSV: self._load_csv_data,
-            MetaGenSupportedFileExtensions.XLSX: self._load_excel_data,
-            MetaGenSupportedFileExtensions.PARQUET: self._load_parquet_data,
-            MetaGenSupportedFileExtensions.JSON: self._load_json_data,
-            MetaGenSupportedFileExtensions.NONE: self._load_none_suffix,
+            MetaGenSupportedFileExtension.CSV: self._load_csv_data,
+            MetaGenSupportedFileExtension.XLSX: self._load_excel_data,
+            MetaGenSupportedFileExtension.PARQUET: self._load_parquet_data,
+            MetaGenSupportedFileExtension.JSON: self._load_json_data,
+            MetaGenSupportedFileExtension.NONE: self._load_none_suffix,
         }
         try:
-            file_extension = MetaGenSupportedFileExtensions(
+            file_extension = MetaGenSupportedFileExtension(
                 Path(self.path).suffix
             )
         except ValueError:
