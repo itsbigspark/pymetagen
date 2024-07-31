@@ -702,21 +702,21 @@ class MetaGen:
     def _write_csv_data(
         self, output_path: Path | str, data: DataFrameT | None
     ) -> None:
-        data = data if data is not None else self.data
-        data.pipe(collect).write_csv(output_path)
+        df = data if data is not None else self.data
+        df.pipe(collect).write_csv(output_path)
 
     def _write_excel_data(
         self, output_path: Path | str, data: DataFrameT | None
     ) -> None:
-        data = data if data is not None else self.data
-        data.pipe(collect).write_excel(output_path)
+        df = data if data is not None else self.data
+        df.pipe(collect).write_excel(output_path)
 
     def _write_json_data(
         self, output_path: Path | str, data: DataFrameT | None
     ) -> None:
-        data = data if data is not None else self.data
-        data.pipe(collect).to_pandas().to_json(
-            output_path,
+        df = data if data is not None else self.data
+        df.pipe(collect).to_pandas().to_json(
+            path_or_buf=output_path,
             orient="records",
             indent=4,
             force_ascii=False,
@@ -727,8 +727,8 @@ class MetaGen:
     def _write_parquet_data(
         self, output_path: Path | str, data: DataFrameT | None
     ) -> None:
-        data = data if data is not None else self.data
-        data.pipe(collect).write_parquet(output_path)
+        df = data if data is not None else self.data
+        df.pipe(collect).write_parquet(output_path)
 
 
 def json_metadata_to_pandas(path: Path | str) -> pd.DataFrame:
