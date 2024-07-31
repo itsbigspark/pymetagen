@@ -100,6 +100,8 @@ workflows:
     jobs:
       - unit-test-39
       - unit-test-310
-      - unit-test-311
+      - unit-test-311:
+          context:
+            - SONARCLOUD
       - unit-test-312
   
