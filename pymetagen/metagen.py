@@ -195,67 +195,67 @@ class MetaGen:
         )
 
         metadata: dict[Hashable, dict[str, Any]] = {}
+        schema = self.data.collect_schema()
+        length_of_columns = schema.len()
 
         simple_metadata = self._get_simple_metadata(
             columns_to_drop=columns_to_drop
         )
         for column, data in simple_metadata.items():
-            assert len(data) == len(self.data.columns), assert_msg.format(
-                column
-            )
+            assert len(data) == length_of_columns, assert_msg.format(column)
         metadata.update(simple_metadata)
 
         number_of_null_and_zeros = self._number_of_null_and_zeros(
             metadata["Type"]
         )
-        assert len(number_of_null_and_zeros) == len(
-            self.data.columns
+        assert (
+            len(number_of_null_and_zeros) == length_of_columns
         ), assert_msg.format("null and zeros")
         metadata["# empty/zero"] = number_of_null_and_zeros
 
         number_of_positive_values = self._number_of_positive_values(
             metadata["Type"]
         )
-        assert len(number_of_positive_values) == len(
-            self.data.columns
+        assert (
+            len(number_of_positive_values) == length_of_columns
         ), assert_msg.format("positive values")
         metadata["# positive"] = number_of_positive_values
 
         number_of_negative_values = self._number_of_negative_values(
             metadata["Type"]
         )
-        assert len(number_of_negative_values) == len(
-            self.data.columns
+        assert (
+            len(number_of_negative_values) == length_of_columns
         ), assert_msg.format("negative values")
         metadata["# negative"] = number_of_negative_values
 
         minimal_string_length = self._minimal_string_length(metadata["Type"])
-        assert len(minimal_string_length) == len(
-            self.data.columns
+        assert (
+            len(minimal_string_length) == length_of_columns
         ), assert_msg.format("minimal string length")
         metadata["Min Length"] = minimal_string_length
 
         maximal_string_length = self._maximal_string_length(metadata["Type"])
-        assert len(maximal_string_length) == len(
-            self.data.columns
+        assert (
+            len(maximal_string_length) == length_of_columns
         ), assert_msg.format("maximal string length")
         metadata["Max Length"] = maximal_string_length
 
         number_of_unique_counts = self._number_of_unique_counts()
-        assert len(number_of_unique_counts) == len(
-            self.data.columns
+        assert (
+            len(number_of_unique_counts) == length_of_columns
         ), assert_msg.format("number of unique counts")
         metadata["# unique"] = number_of_unique_counts
 
         number_of_unique_values = self._number_of_unique_values()
-        assert len(number_of_unique_values) == len(
-            self.data.columns
+        assert (
+            len(number_of_unique_values) == length_of_columns
         ), assert_msg.format("number of unique values")
         metadata["Values"] = number_of_unique_values
 
         metadata["Description"] = {}
         metadata["Long Name"] = {}
-        for column in self.data.columns:
+        for column in schema.names():
             description_data = self.descriptions.get(column, {})
             metadata["Description"][column] = description_data.get(
                 "description", ""
@@ -311,7 +311,9 @@ class MetaGen:
         )
 
         types_: dict[Hashable, str] = {}
-        for col, type_ in zip(self.data.columns, self.data.dtypes):
+        for col, type_ in zip(
+            self.data.collect_schema().names(), self.data.dtypes
+        ):
             types_[col] = dtype_to_metagen_type(type_)
         metadata_table["Type"] = types_
 
@@ -321,7 +323,7 @@ class MetaGen:
         self, types: dict[str, MetaGenDataType]
     ) -> dict[str, int]:
         nulls = {}
-        for col in self.data.columns:
+        for col in self.data.collect_schema().names():
             data = self.data.pipe(collect).select(col)
             null_count = data.null_count().row(0)[0]
             zero_count = (
@@ -336,7 +338,7 @@ class MetaGen:
         self, types: dict[str, MetaGenDataType]
     ) -> dict[str, int | None]:
         pos = {}
-        for col in self.data.columns:
+        for col in self.data.collect_schema().names():
             pos_count = (
                 self.data.filter(pl.col(col) > 0).pipe(collect).shape[0]
                 if types[col] in MetaGenDataType.numeric_data_types()
@@ -349,7 +351,7 @@ class MetaGen:
         self, types: dict[str, MetaGenDataType]
     ) -> dict[str, int | None]:
         neg = {}
-        for col in self.data.columns:
+        for col in self.data.collect_schema().names():
             neg_count = (
                 self.data.filter(pl.col(col) < 0).pipe(collect).shape[0]
                 if types[col] in MetaGenDataType.numeric_data_types()
@@ -362,7 +364,7 @@ class MetaGen:
         self, types: dict[str, MetaGenDataType]
     ) -> dict[str, int | None]:
         min_str_length = {}
-        for col in self.data.columns:
+        for col in self.data.collect_schema().names():
             if types[col] in MetaGenDataType.categorical_data_types():
                 min_str_length[col] = (
                     self.data.with_columns(
@@ -384,7 +386,7 @@ class MetaGen:
         self, types: dict[str, MetaGenDataType]
     ) -> dict[str, int | None]:
         max_str_length = {}
-        for col in self.data.columns:
+        for col in self.data.collect_schema().names():
             if types[col] in MetaGenDataType.categorical_data_types():
                 max_str_length[col] = (
                     self.data.with_columns(
@@ -411,7 +413,7 @@ class MetaGen:
 
     def _number_of_unique_counts(self) -> dict[str, int]:
         unique_counts = {}
-        for col in self.data.columns:
+        for col in self.data.collect_schema().names():
             if not self._is_column_all_null(col):
                 unique_counts[col] = (
                     self.data.select(col).pipe(collect).n_unique()
@@ -425,7 +427,7 @@ class MetaGen:
         self, max_number_of_unique_to_show: int = 10
     ) -> dict[str, list[Any] | list[None] | None]:
         unique_values: dict[str, list[Any] | list[None] | None] = {}
-        for col in self.data.columns:
+        for col in self.data.collect_schema().names():
             if not self._is_column_all_null(col):
                 values = (
                     self.data.select(col).pipe(collect).unique()[col].to_list()
@@ -590,7 +592,7 @@ class MetaGen:
         Inspect the data.
         """
         data_to_look = self.data if data is None else data
-        tbl_cols = tbl_cols or len(self.data.columns)
+        tbl_cols = tbl_cols or self.data.collect_schema().len()
         with pl.Config(
             fmt_str_lengths=fmt_str_lengths,
             tbl_cols=tbl_cols,

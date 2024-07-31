@@ -22,6 +22,10 @@ pytest = "^8.2.2"
 tox = "^4.15.1"
 typing-extensions = "^4.12.2"
 mypy = "^1.11.1"
+coverage = "^7.6.0"
+pytest-cov = "^5.0.0"
+pytest-xdist = "^3.6.1"
+pandas-stubs = "^2.2.2.240603"
 
 [tool.poetry.extras]
 xlsx = ["xlsxwriter"]
@@ -68,3 +72,33 @@ style = "sphinx"
 [tool.pytest.ini_options]
 addopts = '--strict-markers --junitxml=test-reports/pytest.xml'
 junit_family = 'xunit1'
+
+
+[tool.mypy]
+files = "pymetagen"
+python_version = "3.12"
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = ["pyarrow", "pyarrow.parquet", "pyarrow.compute"]
+ignore_missing_imports = true
+
+
+[tool.coverage.report]
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+    "if .*.debug:",
+]
+
+[tool.coverage.run]
+branch = true
