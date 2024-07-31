@@ -115,7 +115,7 @@ def cli():
     type=click.BOOL,
     default=False,
     is_flag=True,
-    help="(optional flag) Show columns with no descriptions",
+    help=("(optional flag) in force descriptions for all columns."),
 )
 def metadata(
     input: Path,
@@ -172,12 +172,12 @@ def metadata(
             .to_dict()["Description"]
         )
     if warning_description:
-        click.echo("Column without Descriptions:")
-        click.echo(
-            metagen._metadata[metagen._metadata["Description"] == ""][
-                "Name"
-            ].to_list()
+        message = (
+            "Columns without descriptions: "
+            f"{metagen._metadata[metagen._metadata['Description'] == '']['Name'].to_list()}"
+            "Please add descriptions"
         )
+        raise click.ClickException(message=message)
 
 
 @click.command(
