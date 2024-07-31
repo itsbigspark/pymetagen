@@ -73,16 +73,16 @@ jobs:
       - run:
           name: Run tests
           command: |
-            poetry run tox -e py311 
-            poetry run pytest -v tests/ --cov=pymetagen --fail-without-cached-data
-      - save-test-results
-      - store_artifacts:
-          path: .coverage
-      - run:
-          name: Coverage Report
-          command: |
+            poetry run tox -e py311 -- -- --cov=pymetagen
             poetry run coverage report -m
             poetry run coverage xml -o .coverage-reports/coverage.xml
+      - save-test-results
+      - run:
+          name: mypy
+          command: |
+            mkdir -p .mypy-reports
+            mypy | tee .mypy-reports/report.txt
+            echo "Mypy report saved to .mypy-reports/report.txt"
       - sonarcloud/scan
   unit-test-312:
     executor: python312

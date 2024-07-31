@@ -76,7 +76,7 @@ junit_family = 'xunit1'
 
 [tool.mypy]
 files = "pymetagen"
-python_version = "3.12"
+python_version = "3.11"
 check_untyped_defs = true
 
 [[tool.mypy.overrides]]
