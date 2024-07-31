@@ -80,7 +80,14 @@ python_version = "3.11"
 check_untyped_defs = true
 
 [[tool.mypy.overrides]]
-module = ["pyarrow", "pyarrow.parquet", "pyarrow.compute", "polars", "click"]
+module = [
+    "pyarrow",
+    "pyarrow.parquet",
+    "pyarrow.compute",
+    "polars",
+    "click",
+    "polars.datatypes.constants",
+]
 ignore_missing_imports = true
 
 

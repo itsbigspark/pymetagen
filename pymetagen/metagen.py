@@ -194,7 +194,7 @@ class MetaGen:
             " columns in data."
         )
 
-        metadata: dict[Hashable, dict[str, Any]] = {}
+        metadata: dict[Hashable, dict[Hashable, Any]] = {}
         schema = self.data.collect_schema()
         length_of_columns = schema.len()
 
@@ -256,7 +256,9 @@ class MetaGen:
         metadata["Description"] = {}
         metadata["Long Name"] = {}
         for column in schema.names():
-            description_data = self.descriptions.get(column, {})
+            description_data: dict[str, Any] = self.descriptions.get(
+                column, {}
+            )
             metadata["Description"][column] = description_data.get(
                 "description", ""
             )
@@ -320,9 +322,9 @@ class MetaGen:
         return metadata_table
 
     def _number_of_null_and_zeros(
-        self, types: dict[str, MetaGenDataType]
-    ) -> dict[str, int]:
-        nulls = {}
+        self, types: dict[Hashable, MetaGenDataType]
+    ) -> dict[Hashable, int]:
+        nulls: dict[Hashable, int] = {}
         for col in self.data.collect_schema().names():
             data = self.data.pipe(collect).select(col)
             null_count = data.null_count().row(0)[0]
@@ -335,9 +337,9 @@ class MetaGen:
         return nulls
 
     def _number_of_positive_values(
-        self, types: dict[str, MetaGenDataType]
-    ) -> dict[str, int | None]:
-        pos = {}
+        self, types: dict[Hashable, MetaGenDataType]
+    ) -> dict[Hashable, int | None]:
+        pos: dict[Hashable, int | None] = {}
         for col in self.data.collect_schema().names():
             pos_count = (
                 self.data.filter(pl.col(col) > 0).pipe(collect).shape[0]
@@ -348,9 +350,9 @@ class MetaGen:
         return pos
 
     def _number_of_negative_values(
-        self, types: dict[str, MetaGenDataType]
-    ) -> dict[str, int | None]:
-        neg = {}
+        self, types: dict[Hashable, MetaGenDataType]
+    ) -> dict[Hashable, int | None]:
+        neg: dict[Hashable, int | None] = {}
         for col in self.data.collect_schema().names():
             neg_count = (
                 self.data.filter(pl.col(col) < 0).pipe(collect).shape[0]
@@ -361,9 +363,9 @@ class MetaGen:
         return neg
 
     def _minimal_string_length(
-        self, types: dict[str, MetaGenDataType]
-    ) -> dict[str, int | None]:
-        min_str_length = {}
+        self, types: dict[Hashable, MetaGenDataType]
+    ) -> dict[Hashable, int | None]:
+        min_str_length: dict[Hashable, int | None] = {}
         for col in self.data.collect_schema().names():
             if types[col] in MetaGenDataType.categorical_data_types():
                 min_str_length[col] = (
@@ -383,9 +385,9 @@ class MetaGen:
         return min_str_length
 
     def _maximal_string_length(
-        self, types: dict[str, MetaGenDataType]
-    ) -> dict[str, int | None]:
-        max_str_length = {}
+        self, types: dict[Hashable, MetaGenDataType]
+    ) -> dict[Hashable, int | None]:
+        max_str_length: dict[Hashable, int | None] = {}
         for col in self.data.collect_schema().names():
             if types[col] in MetaGenDataType.categorical_data_types():
                 max_str_length[col] = (
@@ -411,8 +413,8 @@ class MetaGen:
         df = self.data.select(col).pipe(collect)
         return df.null_count().row(0)[0] == len(df)
 
-    def _number_of_unique_counts(self) -> dict[str, int]:
-        unique_counts = {}
+    def _number_of_unique_counts(self) -> dict[Hashable, int]:
+        unique_counts: dict[Hashable, int] = {}
         for col in self.data.collect_schema().names():
             if not self._is_column_all_null(col):
                 unique_counts[col] = (
@@ -425,8 +427,8 @@ class MetaGen:
 
     def _number_of_unique_values(
         self, max_number_of_unique_to_show: int = 10
-    ) -> dict[str, list[Any] | list[None] | None]:
-        unique_values: dict[str, list[Any] | list[None] | None] = {}
+    ) -> dict[Hashable, list[Any] | list[None] | None]:
+        unique_values: dict[Hashable, list[Any] | list[None] | None] = {}
         for col in self.data.collect_schema().names():
             if not self._is_column_all_null(col):
                 values = (
