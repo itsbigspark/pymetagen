@@ -195,14 +195,16 @@ class CustomEncoder(json.JSONEncoder):
     def default(self, obj: object):
         if isinstance(obj, set):
             return list(obj)
-        if isinstance(obj, datetime.datetime | datetime.date | datetime.time):
+        if isinstance(obj, datetime.date):
+            return obj.isoformat()
+        if isinstance(obj, datetime.time):
             return obj.isoformat()
         if isinstance(obj, datetime.datetime):
             return obj.isoformat(sep="T", timespec="seconds")
         if isinstance(obj, datetime.timedelta):
             return str(obj)
         if isinstance(obj, Enum):
-            return str(obj)
+            return obj.value
         return json.JSONEncoder.default(self, obj)
 
 
