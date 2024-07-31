@@ -73,7 +73,6 @@ style = "sphinx"
 addopts = '--strict-markers --junitxml=test-reports/pytest.xml'
 junit_family = 'xunit1'
 
-
 [tool.mypy]
 files = "pymetagen"
 python_version = "3.11"
@@ -84,9 +83,6 @@ module = [
     "pyarrow",
     "pyarrow.parquet",
     "pyarrow.compute",
-    "polars",
-    "click",
-    "polars.datatypes.constants",
 ]
 ignore_missing_imports = true
 
