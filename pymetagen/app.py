@@ -433,7 +433,7 @@ def extracts(
             )
         )
         formats_to_write = formats_to_write & extra_format_enums
-
+    click.echo("Writing extracts...")
     metagen.write_extracts(
         output_path=output,
         number_rows=number_rows,
