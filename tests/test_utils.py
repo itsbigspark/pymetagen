@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+import datetime
+import json
 from collections.abc import Sequence
+from pathlib import Path
 
 import pytest
 
 from pymetagen.utils import (
+    CustomDecoder,
+    CustomEncoder,
     InspectionMode,
     get_nested_path,
     map_inspection_modes,
@@ -114,3 +119,74 @@ def test_map_inspection_modes_raises_error(inspection_modes: Sequence[str]):
         f"inspection_modes must be one of {InspectionMode.list()}"
         == exc_info.value.args[0]
     )
+
+
+class TestCustomJSONDecoder:
+    def test_custom_json_decoder(self):
+        path = Path("tests/data/sample.json")
+        with path.open("r") as f:
+            data = json.load(f, cls=CustomDecoder)
+
+        assert data == {
+            "name": "John Doe",
+            "dob": datetime.date(1990, 1, 1),
+            "date": datetime.date(2021, 1, 1),
+            "timestamp": datetime.datetime(2021, 1, 1, 0, 0),
+            "age": 30,
+            "address": {
+                "street": "123 Main St",
+                "city": "Anytown",
+                "state": "AS",
+                "zip": "12345",
+            },
+            "phones": [
+                {"type": "home", "number": "123-456-7890"},
+                {"type": "work", "number": "123-456-7890"},
+            ],
+        }
+
+
+class TestCustomJSONEncoder:
+    def test_custom_json_encoder(self, tmp_dir_path: Path):
+        data = {
+            "name": "John Doe",
+            "dob": datetime.date(1990, 1, 1),
+            "date": datetime.date(2021, 1, 1),
+            "timestamp": datetime.datetime(2021, 1, 1, 0, 0),
+            "age": 30,
+            "address": {
+                "street": "123 Main St",
+                "city": "Anytown",
+                "state": "AS",
+                "zip": "12345",
+            },
+            "phones": [
+                {"type": "home", "number": "123-456-7890"},
+                {"type": "work", "number": "123-456-7890"},
+            ],
+        }
+        path = tmp_dir_path / "sample.json"
+        with path.open("w") as f:
+            json.dump(data, f, cls=CustomEncoder, indent=4)
+
+        assert path.exists()
+        with path.open("r") as f:
+            loaded_data = json.load(f)
+
+        assert loaded_data == {
+            "name": "John Doe",
+            "dob": "1990-01-01",
+            "date": "2021-01-01",
+            "timestamp": "2021-01-01T00:00:00",
+            "age": 30,
+            "address": {
+                "street": "123 Main St",
+                "city": "Anytown",
+                "state": "AS",
+                "zip": "12345",
+            },
+            "phones": [
+                {"type": "home", "number": "123-456-7890"},
+                {"type": "work", "number": "123-456-7890"},
+            ],
+        }
