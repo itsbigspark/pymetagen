@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  sonarcloud: sonarsource/sonarcloud@2.0.0
+
 commands:
 
   checkout-install:
@@ -70,8 +73,17 @@ jobs:
       - run:
           name: Run tests
           command: |
-            poetry run tox -e py311
+            poetry run tox -e py311 
+            poetry run pytest -v tests/ --cov=pymetagen --fail-without-cached-data
       - save-test-results
+      - store_artifacts:
+          path: .coverage
+      - run:
+          name: Coverage Report
+          command: |
+            poetry run coverage report -m
+            poetry run coverage xml -o .coverage-reports/coverage.xml
+      - sonarcloud/scan
   unit-test-312:
     executor: python312
     steps:
@@ -90,3 +102,4 @@ workflows:
       - unit-test-310
       - unit-test-311
       - unit-test-312
+  
