@@ -56,7 +56,7 @@ select = [
     "F",  # pyflakes
     "UP", # pyupgrade
 ]
-target-version = "py311"
+target-version = "py39"
 line-length = 79
 ignore = [
     "E501",
