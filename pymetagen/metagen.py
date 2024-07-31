@@ -9,10 +9,9 @@ from __future__ import annotations
 
 import json
 import subprocess
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from functools import cached_property
 from pathlib import Path
-from collections.abc import Callable
 
 import numpy as np
 import pandas as pd
