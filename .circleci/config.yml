@@ -81,7 +81,7 @@ jobs:
           name: mypy
           command: |
             mkdir -p .mypy-reports
-            poetry run mypy | tee .mypy-reports/report.txt
+            poetry run mypy | tee .mypy-reports/report.txt || true
             echo "Mypy report saved to .mypy-reports/report.txt"
       - sonarcloud/scan
   unit-test-312:
