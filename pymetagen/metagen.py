@@ -12,12 +12,19 @@ import subprocess
 from collections.abc import Sequence
 from functools import cached_property
 from pathlib import Path
+from typing import Callable
 
 import numpy as np
 import pandas as pd
 import polars as pl
 
-from pymetagen._typing import Any, DataFrameT, Hashable
+from pymetagen._typing import (
+    Any,
+    DataFrameT,
+    Hashable,
+    OptionalAnyValueDict,
+    OptionalPandasDataFrame,
+)
 from pymetagen.dataloader import DataLoader, LazyDataLoader
 from pymetagen.datatypes import (
     MetaGenDataType,
@@ -30,6 +37,7 @@ from pymetagen.exceptions import (
     LoadingModeUnsupportedError,
 )
 from pymetagen.utils import (
+    CustomDecoder,
     CustomEncoder,
     InspectionMode,
     collect,
@@ -55,7 +63,7 @@ class MetaGen:
     def __init__(
         self,
         data: DataFrameT,
-        descriptions: dict[str, dict[str, str]] | None = None,
+        descriptions: dict[Hashable, dict[str, Any]] | None = None,
         compute_metadata: bool = False,
     ):
         self.data = data
@@ -117,10 +125,13 @@ class MetaGen:
         data = loader_class(path)()
 
         if descriptions_path is not None:
-            func_map = {
+            func_map: dict[
+                str, Callable[[Path], dict[Hashable, dict[str, Any]]]
+            ] = {
                 MetaGenSupportedFileExtension.JSON.value: cls._load_descriptions_from_json,
                 MetaGenSupportedFileExtension.CSV.value: cls._load_descriptions_from_csv,
             }
+
             descriptions = func_map[descriptions_path.suffix](
                 descriptions_path
             )
@@ -142,8 +153,10 @@ class MetaGen:
         return pl.from_pandas(self._metadata)
 
     @staticmethod
-    def _load_descriptions_from_json(path: Path) -> dict[str, dict[str, str]]:
-        return json.loads(path.read_text())["descriptions"]
+    def _load_descriptions_from_json(
+        path: Path,
+    ) -> dict[Hashable, dict[str, Any]]:
+        return json.loads(path.read_text(), cls=CustomDecoder)["descriptions"]
 
     @staticmethod
     def _load_descriptions_from_csv(
@@ -410,8 +423,8 @@ class MetaGen:
 
     def _number_of_unique_values(
         self, max_number_of_unique_to_show: int = 10
-    ) -> dict[str, list[Any] | list[None]]:
-        unique_values = {}
+    ) -> dict[str, list[Any] | list[None] | None]:
+        unique_values: dict[str, list[Any] | list[None] | None] = {}
         for col in self.data.columns:
             if not self._is_column_all_null(col):
                 values = (
@@ -429,7 +442,12 @@ class MetaGen:
                 unique_values[col] = [None]
 
         unique_values = {
-            col: _list if len(_list) < max_number_of_unique_to_show else None
+            col: (
+                _list
+                if _list is not None
+                and len(_list) < max_number_of_unique_to_show
+                else None
+            )
             for col, _list in unique_values.items()
         }
         return unique_values
@@ -437,7 +455,7 @@ class MetaGen:
     def write_metadata(
         self,
         outpath: str | Path,
-        metadata: pd.DataFrame | dict[Hashable, Any] | None = None,
+        metadata: OptionalAnyValueDict | OptionalPandasDataFrame = None,
     ) -> None:
         """
         Write metadata to a file.
@@ -452,7 +470,11 @@ class MetaGen:
         """
         outpath = Path(outpath)
 
-        output_type_mapping = {
+        output_type_mapping: dict[
+            str,
+            Callable[[Path, OptionalAnyValueDict], None]
+            | Callable[[Path, OptionalPandasDataFrame], None],
+        ] = {
             ".csv": self._write_csv_metadata,
             ".xlsx": self._write_excel_metadata,
             ".json": self._write_json_metadata,
@@ -467,22 +489,23 @@ class MetaGen:
                 " supported file extensions:"
                 f" {MetaGenSupportedFileExtension.values()}"
             )
-        write_metadata(outpath, metadata)
+
+        write_metadata(outpath, metadata)  # type: ignore[arg-type]
 
     def _write_excel_metadata(
-        self, output_path: str, metadata: pd.DataFrame | None
+        self, output_path: Path, metadata: OptionalPandasDataFrame
     ) -> None:
         metadata = metadata if metadata is not None else self._metadata
         metadata.to_excel(output_path, sheet_name="Fields", index=False)
 
     def _write_csv_metadata(
-        self, output_path: str, metadata: pd.DataFrame | None
+        self, output_path: Path, metadata: OptionalPandasDataFrame
     ) -> None:
         metadata = metadata if metadata is not None else self._metadata
         metadata.to_csv(output_path, index=False)
 
     def _write_json_metadata(
-        self, output_path: str, metadata: dict[Hashable, Any] | None
+        self, output_path: Path, metadata: OptionalAnyValueDict
     ) -> None:
         if metadata is not None:
             metadata_dict = metadata
@@ -490,7 +513,9 @@ class MetaGen:
             _metadata = self.compute_metadata()
             metadata_dict = _metadata.to_dict(orient="index")
 
-        json_to_dump = {"fields": metadata_dict}
+        json_to_dump: dict[str, dict[Hashable, Any]] = {
+            "fields": metadata_dict
+        }
         with open(output_path, "w") as f:
             json.dump(
                 json_to_dump,
@@ -549,7 +574,7 @@ class MetaGen:
         self.write_data(outpath=output_path, data=data)
 
     def _write_parquet_metadata(
-        self, output_path: str, metadata: pd.DataFrame | None
+        self, output_path: Path, metadata: OptionalPandasDataFrame
     ) -> None:
         metadata = metadata if metadata is not None else self._metadata
         metadata.to_parquet(output_path)

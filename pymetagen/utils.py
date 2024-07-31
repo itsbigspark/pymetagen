@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from enum import Enum
 from glob import glob
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import polars as pl
@@ -29,11 +29,15 @@ class EnumListMixin:
         return list(map(lambda c: c, cls))  # type: ignore
 
     @classmethod
-    def values(cls) -> list[str]:
+    def values(cls):
         """
-        Get the values of the enum.
+        Get the values of the enum as strings.
         """
-        return list(map(lambda c: c.value, cls))  # type: ignore
+
+        def get_value(c: Enum) -> str:
+            return c.value
+
+        return list(map(get_value, cls))  # type: ignore
 
 
 class InspectionMode(EnumListMixin, str, Enum):
@@ -140,9 +144,7 @@ def sample(
     elif mode == "lazy":
         assert isinstance(df, pl.LazyFrame)
         random_generator = np.random.default_rng(random_seed)
-        row_depth = int(
-            df.select(pl.first()).select(pl.count()).collect()[0, 0]
-        )
+        row_depth = int(df.select(pl.first()).select(pl.len()).collect()[0, 0])
 
         row_indexes = random_generator.choice(
             a=row_depth,
@@ -177,7 +179,7 @@ def extract_data(
     """
     if inspection_mode not in InspectionMode.list():
         raise NotImplementedError(
-            f"inspection_mode must be one of {InspectionMode.values()}"
+            f"inspection_mode must be one of {InspectionMode.list()}"
         )
     if inspection_mode == InspectionMode.sample:
         df = df.pipe(sample, mode, tbl_rows, random_seed, with_replacement)
@@ -193,9 +195,7 @@ class CustomEncoder(json.JSONEncoder):
     def default(self, obj: object):
         if isinstance(obj, set):
             return list(obj)
-        if isinstance(
-            obj, Union[datetime.datetime, datetime.date, datetime.time]
-        ):
+        if isinstance(obj, datetime.datetime | datetime.date | datetime.time):
             return obj.isoformat()
         if isinstance(obj, datetime.datetime):
             return obj.isoformat(sep="T", timespec="seconds")
@@ -204,6 +204,37 @@ class CustomEncoder(json.JSONEncoder):
         if isinstance(obj, Enum):
             return str(obj)
         return json.JSONEncoder.default(self, obj)
+
+
+class CustomDecoder(json.JSONDecoder):
+    def __init__(self, *args, **kwargs):
+        json.JSONDecoder.__init__(
+            self, object_hook=self.object_hook, *args, **kwargs
+        )
+
+    def object_hook(self, obj):
+        ret = {}
+        for key, value in obj.items():
+            if isinstance(value, dict):
+                ret[key] = self.object_hook(value)
+            elif isinstance(value, list):
+                ret[key] = [
+                    self.object_hook(item) if isinstance(item, dict) else item
+                    for item in value
+                ]
+            elif isinstance(value, str):
+                try:
+                    if "date" in key or key in {"dob"}:
+                        ret[key] = datetime.date.fromisoformat(value)
+                    elif "datetime" in key or key in {"dt", "timestamp"}:
+                        ret[key] = datetime.datetime.fromisoformat(value)
+                    else:
+                        ret[key] = value
+                except (AttributeError, ValueError):
+                    pass
+            else:
+                ret[key] = value
+        return ret
 
 
 def map_inspection_modes(

@@ -125,8 +125,10 @@ class TestMetaGen:
         null_data = {
             "data_values": [None, None, None, None, None],
         }
-        null_data = pl.DataFrame(null_data, schema={"data_values": pl.Null})
-        metagen = MetaGen(data=null_data)
+        null_data_frame = pl.DataFrame(
+            null_data, schema={"data_values": pl.Null}
+        )
+        metagen = MetaGen(data=null_data_frame)
         metadata = metagen.compute_metadata()
         metadata_dict = metadata.to_dict(orient="records").pop()
 
