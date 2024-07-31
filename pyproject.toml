@@ -56,7 +56,7 @@ select = [
     "F",  # pyflakes
     "UP", # pyupgrade
 ]
-target-version = "py39"
+target-version = "py311"
 line-length = 79
 ignore = [
     "E501",
@@ -79,11 +79,7 @@ python_version = "3.11"
 check_untyped_defs = true
 
 [[tool.mypy.overrides]]
-module = [
-    "pyarrow",
-    "pyarrow.parquet",
-    "pyarrow.compute",
-]
+module = ["pyarrow", "pyarrow.parquet", "pyarrow.compute"]
 ignore_missing_imports = true
 
 
