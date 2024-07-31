@@ -9,5 +9,5 @@ DataFrameT = typing.Union[pl.DataFrame, pl.LazyFrame]
 Any = typing.Any
 Hashable = typing.Hashable
 
-OptionalPandasDataFrame: typing.TypeAlias = typing.Optional[pd.DataFrame]
-OptionalAnyValueDict: typing.TypeAlias = typing.Optional[dict[Hashable, Any]]
+OptionalPandasDataFrame: typing.TypeAlias = pd.DataFrame | None
+OptionalAnyValueDict: typing.TypeAlias = dict[Hashable, Any] | None
