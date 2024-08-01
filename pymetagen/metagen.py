@@ -62,7 +62,7 @@ class MetaGen:
     def __init__(
         self,
         data: DataFrameT,
-        descriptions: dict[Hashable, dict[str, str]] | None = None,
+        descriptions: dict[str, dict[str, str]] | None = None,
         compute_metadata: bool = False,
     ):
         self.data = data
@@ -125,7 +125,7 @@ class MetaGen:
 
         if descriptions_path is not None:
             func_map: dict[
-                str, Callable[[Path], dict[Hashable, dict[str, str]]]
+                str, Callable[[Path], dict[str, dict[str, str]]]
             ] = {
                 MetaGenSupportedFileExtension.JSON.value: cls._load_descriptions_from_json,
                 MetaGenSupportedFileExtension.CSV.value: cls._load_descriptions_from_csv,
@@ -154,16 +154,17 @@ class MetaGen:
     @staticmethod
     def _load_descriptions_from_json(
         path: Path,
-    ) -> dict[Hashable, dict[str, str]]:
+    ) -> dict[str, dict[str, str]]:
         return json.loads(path.read_text(), cls=CustomDecoder)["descriptions"]
 
     @staticmethod
     def _load_descriptions_from_csv(
         path: Path,
-    ) -> dict[Hashable, dict[str, str]]:
-        return (
-            pd.read_csv(path).set_index("column_name").to_dict(orient="index")
+    ) -> dict[str, dict[str, str]]:
+        descriptions: dict[str, dict[str, str]] = (
+            pd.read_csv(path).set_index("column_name").to_dict(orient="index")  # type: ignore[assignment]
         )
+        return descriptions
 
     def compute_metadata(self) -> pd.DataFrame:
         columns_to_drop = [
