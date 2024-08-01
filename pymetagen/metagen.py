@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import subprocess
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from functools import cached_property
 from pathlib import Path
 
@@ -17,7 +17,13 @@ import numpy as np
 import pandas as pd
 import polars as pl
 
-from pymetagen._typing import Any, DataFrameT, Hashable
+from pymetagen._typing import (
+    Any,
+    DataFrameT,
+    Hashable,
+    OptionalAnyValueDict,
+    OptionalPandasDataFrame,
+)
 from pymetagen.dataloader import DataLoader, LazyDataLoader
 from pymetagen.datatypes import (
     MetaGenDataType,
@@ -30,6 +36,7 @@ from pymetagen.exceptions import (
     LoadingModeUnsupportedError,
 )
 from pymetagen.utils import (
+    CustomDecoder,
     CustomEncoder,
     InspectionMode,
     collect,
@@ -117,10 +124,13 @@ class MetaGen:
         data = loader_class(path)()
 
         if descriptions_path is not None:
-            func_map = {
+            func_map: dict[
+                str, Callable[[Path], dict[str, dict[str, str]]]
+            ] = {
                 MetaGenSupportedFileExtension.JSON.value: cls._load_descriptions_from_json,
                 MetaGenSupportedFileExtension.CSV.value: cls._load_descriptions_from_csv,
             }
+
             descriptions = func_map[descriptions_path.suffix](
                 descriptions_path
             )
@@ -142,16 +152,19 @@ class MetaGen:
         return pl.from_pandas(self._metadata)
 
     @staticmethod
-    def _load_descriptions_from_json(path: Path) -> dict[str, dict[str, str]]:
-        return json.loads(path.read_text())["descriptions"]
+    def _load_descriptions_from_json(
+        path: Path,
+    ) -> dict[str, dict[str, str]]:
+        return json.loads(path.read_text(), cls=CustomDecoder)["descriptions"]
 
     @staticmethod
     def _load_descriptions_from_csv(
         path: Path,
-    ) -> dict[Hashable, dict[str, Any]]:
-        return (
-            pd.read_csv(path).set_index("column_name").to_dict(orient="index")
+    ) -> dict[str, dict[str, str]]:
+        descriptions: dict[str, dict[str, str]] = (
+            pd.read_csv(path).set_index("column_name").to_dict(orient="index")  # type: ignore[assignment]
         )
+        return descriptions
 
     def compute_metadata(self) -> pd.DataFrame:
         columns_to_drop = [
@@ -181,69 +194,71 @@ class MetaGen:
             " columns in data."
         )
 
-        metadata: dict[Hashable, dict[str, Any]] = {}
+        metadata: dict[Hashable, dict[Hashable, Any]] = {}
+        schema = self.data.collect_schema()
+        length_of_columns = schema.len()
 
         simple_metadata = self._get_simple_metadata(
             columns_to_drop=columns_to_drop
         )
         for column, data in simple_metadata.items():
-            assert len(data) == len(self.data.columns), assert_msg.format(
-                column
-            )
+            assert len(data) == length_of_columns, assert_msg.format(column)
         metadata.update(simple_metadata)
 
         number_of_null_and_zeros = self._number_of_null_and_zeros(
             metadata["Type"]
         )
-        assert len(number_of_null_and_zeros) == len(
-            self.data.columns
+        assert (
+            len(number_of_null_and_zeros) == length_of_columns
         ), assert_msg.format("null and zeros")
         metadata["# empty/zero"] = number_of_null_and_zeros
 
         number_of_positive_values = self._number_of_positive_values(
             metadata["Type"]
         )
-        assert len(number_of_positive_values) == len(
-            self.data.columns
+        assert (
+            len(number_of_positive_values) == length_of_columns
         ), assert_msg.format("positive values")
         metadata["# positive"] = number_of_positive_values
 
         number_of_negative_values = self._number_of_negative_values(
             metadata["Type"]
         )
-        assert len(number_of_negative_values) == len(
-            self.data.columns
+        assert (
+            len(number_of_negative_values) == length_of_columns
         ), assert_msg.format("negative values")
         metadata["# negative"] = number_of_negative_values
 
         minimal_string_length = self._minimal_string_length(metadata["Type"])
-        assert len(minimal_string_length) == len(
-            self.data.columns
+        assert (
+            len(minimal_string_length) == length_of_columns
         ), assert_msg.format("minimal string length")
         metadata["Min Length"] = minimal_string_length
 
         maximal_string_length = self._maximal_string_length(metadata["Type"])
-        assert len(maximal_string_length) == len(
-            self.data.columns
+        assert (
+            len(maximal_string_length) == length_of_columns
         ), assert_msg.format("maximal string length")
         metadata["Max Length"] = maximal_string_length
 
         number_of_unique_counts = self._number_of_unique_counts()
-        assert len(number_of_unique_counts) == len(
-            self.data.columns
+        assert (
+            len(number_of_unique_counts) == length_of_columns
         ), assert_msg.format("number of unique counts")
         metadata["# unique"] = number_of_unique_counts
 
         number_of_unique_values = self._number_of_unique_values()
-        assert len(number_of_unique_values) == len(
-            self.data.columns
+        assert (
+            len(number_of_unique_values) == length_of_columns
         ), assert_msg.format("number of unique values")
         metadata["Values"] = number_of_unique_values
 
         metadata["Description"] = {}
         metadata["Long Name"] = {}
-        for column in self.data.columns:
-            description_data = self.descriptions.get(column, {})
+        for column in schema.names():
+            description_data: dict[str, Any] = self.descriptions.get(
+                column, {}
+            )
             metadata["Description"][column] = description_data.get(
                 "description", ""
             )
@@ -298,17 +313,19 @@ class MetaGen:
         )
 
         types_: dict[Hashable, str] = {}
-        for col, type_ in zip(self.data.columns, self.data.dtypes):
+        for col, type_ in zip(
+            self.data.collect_schema().names(), self.data.dtypes
+        ):
             types_[col] = dtype_to_metagen_type(type_)
         metadata_table["Type"] = types_
 
         return metadata_table
 
     def _number_of_null_and_zeros(
-        self, types: dict[str, MetaGenDataType]
-    ) -> dict[str, int]:
-        nulls = {}
-        for col in self.data.columns:
+        self, types: dict[Hashable, MetaGenDataType]
+    ) -> dict[Hashable, int]:
+        nulls: dict[Hashable, int] = {}
+        for col in self.data.collect_schema().names():
             data = self.data.pipe(collect).select(col)
             null_count = data.null_count().row(0)[0]
             zero_count = (
@@ -320,10 +337,10 @@ class MetaGen:
         return nulls
 
     def _number_of_positive_values(
-        self, types: dict[str, MetaGenDataType]
-    ) -> dict[str, int | None]:
-        pos = {}
-        for col in self.data.columns:
+        self, types: dict[Hashable, MetaGenDataType]
+    ) -> dict[Hashable, int | None]:
+        pos: dict[Hashable, int | None] = {}
+        for col in self.data.collect_schema().names():
             pos_count = (
                 self.data.filter(pl.col(col) > 0).pipe(collect).shape[0]
                 if types[col] in MetaGenDataType.numeric_data_types()
@@ -333,10 +350,10 @@ class MetaGen:
         return pos
 
     def _number_of_negative_values(
-        self, types: dict[str, MetaGenDataType]
-    ) -> dict[str, int | None]:
-        neg = {}
-        for col in self.data.columns:
+        self, types: dict[Hashable, MetaGenDataType]
+    ) -> dict[Hashable, int | None]:
+        neg: dict[Hashable, int | None] = {}
+        for col in self.data.collect_schema().names():
             neg_count = (
                 self.data.filter(pl.col(col) < 0).pipe(collect).shape[0]
                 if types[col] in MetaGenDataType.numeric_data_types()
@@ -346,10 +363,10 @@ class MetaGen:
         return neg
 
     def _minimal_string_length(
-        self, types: dict[str, MetaGenDataType]
-    ) -> dict[str, int | None]:
-        min_str_length = {}
-        for col in self.data.columns:
+        self, types: dict[Hashable, MetaGenDataType]
+    ) -> dict[Hashable, int | None]:
+        min_str_length: dict[Hashable, int | None] = {}
+        for col in self.data.collect_schema().names():
             if types[col] in MetaGenDataType.categorical_data_types():
                 min_str_length[col] = (
                     self.data.with_columns(
@@ -368,10 +385,10 @@ class MetaGen:
         return min_str_length
 
     def _maximal_string_length(
-        self, types: dict[str, MetaGenDataType]
-    ) -> dict[str, int | None]:
-        max_str_length = {}
-        for col in self.data.columns:
+        self, types: dict[Hashable, MetaGenDataType]
+    ) -> dict[Hashable, int | None]:
+        max_str_length: dict[Hashable, int | None] = {}
+        for col in self.data.collect_schema().names():
             if types[col] in MetaGenDataType.categorical_data_types():
                 max_str_length[col] = (
                     self.data.with_columns(
@@ -396,9 +413,9 @@ class MetaGen:
         df = self.data.select(col).pipe(collect)
         return df.null_count().row(0)[0] == len(df)
 
-    def _number_of_unique_counts(self) -> dict[str, int]:
-        unique_counts = {}
-        for col in self.data.columns:
+    def _number_of_unique_counts(self) -> dict[Hashable, int]:
+        unique_counts: dict[Hashable, int] = {}
+        for col in self.data.collect_schema().names():
             if not self._is_column_all_null(col):
                 unique_counts[col] = (
                     self.data.select(col).pipe(collect).n_unique()
@@ -410,9 +427,9 @@ class MetaGen:
 
     def _number_of_unique_values(
         self, max_number_of_unique_to_show: int = 10
-    ) -> dict[str, list[Any] | list[None]]:
-        unique_values = {}
-        for col in self.data.columns:
+    ) -> dict[Hashable, list[Any] | list[None] | None]:
+        unique_values: dict[Hashable, list[Any] | list[None] | None] = {}
+        for col in self.data.collect_schema().names():
             if not self._is_column_all_null(col):
                 values = (
                     self.data.select(col).pipe(collect).unique()[col].to_list()
@@ -429,7 +446,12 @@ class MetaGen:
                 unique_values[col] = [None]
 
         unique_values = {
-            col: _list if len(_list) < max_number_of_unique_to_show else None
+            col: (
+                _list
+                if _list is not None
+                and len(_list) < max_number_of_unique_to_show
+                else None
+            )
             for col, _list in unique_values.items()
         }
         return unique_values
@@ -437,7 +459,7 @@ class MetaGen:
     def write_metadata(
         self,
         outpath: str | Path,
-        metadata: pd.DataFrame | dict[Hashable, Any] | None = None,
+        metadata: OptionalAnyValueDict | OptionalPandasDataFrame = None,
     ) -> None:
         """
         Write metadata to a file.
@@ -452,7 +474,11 @@ class MetaGen:
         """
         outpath = Path(outpath)
 
-        output_type_mapping = {
+        output_type_mapping: dict[
+            str,
+            Callable[[Path, OptionalAnyValueDict], None]
+            | Callable[[Path, OptionalPandasDataFrame], None],
+        ] = {
             ".csv": self._write_csv_metadata,
             ".xlsx": self._write_excel_metadata,
             ".json": self._write_json_metadata,
@@ -467,22 +493,23 @@ class MetaGen:
                 " supported file extensions:"
                 f" {MetaGenSupportedFileExtension.values()}"
             )
-        write_metadata(outpath, metadata)
+
+        write_metadata(outpath, metadata)  # type: ignore[arg-type]
 
     def _write_excel_metadata(
-        self, output_path: str, metadata: pd.DataFrame | None
+        self, output_path: Path, metadata: OptionalPandasDataFrame
     ) -> None:
         metadata = metadata if metadata is not None else self._metadata
         metadata.to_excel(output_path, sheet_name="Fields", index=False)
 
     def _write_csv_metadata(
-        self, output_path: str, metadata: pd.DataFrame | None
+        self, output_path: Path, metadata: OptionalPandasDataFrame
     ) -> None:
         metadata = metadata if metadata is not None else self._metadata
         metadata.to_csv(output_path, index=False)
 
     def _write_json_metadata(
-        self, output_path: str, metadata: dict[Hashable, Any] | None
+        self, output_path: Path, metadata: OptionalAnyValueDict
     ) -> None:
         if metadata is not None:
             metadata_dict = metadata
@@ -490,7 +517,9 @@ class MetaGen:
             _metadata = self.compute_metadata()
             metadata_dict = _metadata.to_dict(orient="index")
 
-        json_to_dump = {"fields": metadata_dict}
+        json_to_dump: dict[str, dict[Hashable, Any]] = {
+            "fields": metadata_dict
+        }
         with open(output_path, "w") as f:
             json.dump(
                 json_to_dump,
@@ -549,7 +578,7 @@ class MetaGen:
         self.write_data(outpath=output_path, data=data)
 
     def _write_parquet_metadata(
-        self, output_path: str, metadata: pd.DataFrame | None
+        self, output_path: Path, metadata: OptionalPandasDataFrame
     ) -> None:
         metadata = metadata if metadata is not None else self._metadata
         metadata.to_parquet(output_path)
@@ -565,7 +594,7 @@ class MetaGen:
         Inspect the data.
         """
         data_to_look = self.data if data is None else data
-        tbl_cols = tbl_cols or len(self.data.columns)
+        tbl_cols = tbl_cols or self.data.collect_schema().len()
         with pl.Config(
             fmt_str_lengths=fmt_str_lengths,
             tbl_cols=tbl_cols,
@@ -673,21 +702,21 @@ class MetaGen:
     def _write_csv_data(
         self, output_path: Path | str, data: DataFrameT | None
     ) -> None:
-        data = data if data is not None else self.data
-        data.pipe(collect).write_csv(output_path)
+        df = data if data is not None else self.data
+        df.pipe(collect).write_csv(output_path)
 
     def _write_excel_data(
         self, output_path: Path | str, data: DataFrameT | None
     ) -> None:
-        data = data if data is not None else self.data
-        data.pipe(collect).write_excel(output_path)
+        df = data if data is not None else self.data
+        df.pipe(collect).write_excel(output_path)
 
     def _write_json_data(
         self, output_path: Path | str, data: DataFrameT | None
     ) -> None:
-        data = data if data is not None else self.data
-        data.pipe(collect).to_pandas().to_json(
-            output_path,
+        df = data if data is not None else self.data
+        df.pipe(collect).to_pandas().to_json(
+            path_or_buf=output_path,
             orient="records",
             indent=4,
             force_ascii=False,
@@ -698,8 +727,8 @@ class MetaGen:
     def _write_parquet_data(
         self, output_path: Path | str, data: DataFrameT | None
     ) -> None:
-        data = data if data is not None else self.data
-        data.pipe(collect).write_parquet(output_path)
+        df = data if data is not None else self.data
+        df.pipe(collect).write_parquet(output_path)
 
 
 def json_metadata_to_pandas(path: Path | str) -> pd.DataFrame:

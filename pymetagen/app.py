@@ -293,7 +293,7 @@ def inspect(
     A tool to inspect a data set.
     """
     metagen = MetaGen.from_path(path=input, mode=mode)
-    columns_length = len(metagen.data.columns)
+    columns_length = len(metagen.data.collect_schema().names())
     metagen.extract_data(
         mode=mode,
         tbl_rows=number_rows,

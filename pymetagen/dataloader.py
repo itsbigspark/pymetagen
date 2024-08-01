@@ -61,7 +61,7 @@ lazy_csv_unsupported_options = [
 for option in lazy_csv_unsupported_options:
     del POLARS_DEFAULT_LAZY_READ_CSV_OPTIONS[option]
 
-LIST_OF_EXCEL_OPTIONS_FROM_CSV_OPTIONS = []
+LIST_OF_EXCEL_OPTIONS_FROM_CSV_OPTIONS: list[Any] = []
 POLARS_DEFAULT_READ_EXCEL_OPTIONS: dict[str, Any] = {
     key: value
     for key, value in POLARS_DEFAULT_READ_CSV_OPTIONS.items()
@@ -70,7 +70,7 @@ POLARS_DEFAULT_READ_EXCEL_OPTIONS: dict[str, Any] = {
 POLARS_DEFAULT_READ_EXCEL_OPTIONS["engine"] = "openpyxl"
 
 
-POLARS_DEFAULT_READ_PARUET_OPTIONS = {}
+POLARS_DEFAULT_READ_PARQUET_OPTIONS: dict[str, Any] = {}
 
 
 class DataLoader:
@@ -87,7 +87,7 @@ class DataLoader:
         ] = POLARS_DEFAULT_READ_EXCEL_OPTIONS,
         _default_read_parquet_options: dict[
             str, Any
-        ] = POLARS_DEFAULT_READ_PARUET_OPTIONS,
+        ] = POLARS_DEFAULT_READ_PARQUET_OPTIONS,
     ):
         self.path = path
         self.polars_read_csv_options = _default_read_csv_options.copy()
@@ -128,14 +128,14 @@ class DataLoader:
 
     def _update_read_csv_polars_options(
         self, polars_read_csv_options: dict[str, Any] | None
-    ) -> dict[str, Any] | None:
+    ) -> None:
         if polars_read_csv_options is None:
             return
         selectively_update_dict(
             self.polars_read_csv_options, polars_read_csv_options
         )
 
-    def _load_csv_data(self) -> pl.DataFrame:
+    def _load_csv_data(self) -> DataFrameT:
         return pl.read_csv(source=self.path, **self.polars_read_csv_options)
 
     def _load_excel_data(self) -> pl.DataFrame:
@@ -143,7 +143,7 @@ class DataLoader:
             source=self.path, **self.polars_read_excel_options
         )
 
-    def _load_parquet_data(self) -> pl.DataFrame:
+    def _load_parquet_data(self) -> DataFrameT:
         """
         IMPORTANT:
         reading the same data of partitioned parquet files with different

@@ -51,7 +51,7 @@ class TestMetaGen:
             data=df,
         ).compute_metadata()
 
-        assert set(metadata.index) == set(df.columns)
+        assert set(metadata.index) == set(df.collect_schema().names())
 
     @pytest.mark.parametrize(
         "extension, read_metadata",
@@ -87,7 +87,7 @@ class TestMetaGen:
         if extension == "json":
             outdata.reset_index(names=["Name"], inplace=True)
 
-        assert len(outdata) == len(df.columns)
+        assert len(outdata) == len(df.collect_schema().names())
         assert list(outdata.columns) == [
             "Name",
             "Long Name",
@@ -116,7 +116,7 @@ class TestMetaGen:
     )
     def test_metadata_data_frame_with_null_column(
         self,
-        capsys,
+        capsys: pytest.CaptureFixture[str],
         data: str,
         request: pytest.FixtureRequest,
         column_name: str,
@@ -125,10 +125,12 @@ class TestMetaGen:
         null_data = {
             "data_values": [None, None, None, None, None],
         }
-        null_data = pl.DataFrame(null_data, schema={"data_values": pl.Null})
-        metagen = MetaGen(data=null_data)
-        metadata = metagen.compute_metadata()
-        metadata_dict = metadata.to_dict(orient="records").pop()
+        null_data_frame = pl.DataFrame(
+            null_data, schema={"data_values": pl.Null}
+        )
+        metagen = MetaGen(data=null_data_frame)
+        metadata_df = metagen.compute_metadata()
+        metadata_dict = metadata_df.to_dict(orient="records").pop()
 
         assert metadata_dict[column_name] == expected_value
 

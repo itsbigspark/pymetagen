@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  sonarcloud: sonarsource/sonarcloud@2.0.0
+
 commands:
 
   checkout-install:
@@ -12,6 +15,21 @@ commands:
       - run:
           name: Install dependencies
           command: poetry install --only=dev
+      - save_cache:
+          key: poetry-cache-{{ checksum "poetry.lock" }}
+          paths:
+            - /home/circleci/.cache/pypoetry
+
+  checkout-full-install:
+    description: |
+      Checkout the code and install dependencies
+    steps:
+      - checkout
+      - restore_cache:
+          key: poetry-cache-{{ checksum "poetry.lock" }}
+      - run:
+          name: Install dependencies
+          command: poetry install
       - save_cache:
           key: poetry-cache-{{ checksum "poetry.lock" }}
           paths:
@@ -66,12 +84,21 @@ jobs:
   unit-test-311:
     executor: python311
     steps:
-      - checkout-install
+      - checkout-full-install # install all dependencies for mypy
       - run:
           name: Run tests
           command: |
-            poetry run tox -e py311
+            poetry run tox -e py311 -- -- --cov=pymetagen
+            poetry run coverage report -m
+            poetry run coverage xml -o .coverage-reports/coverage.xml
       - save-test-results
+      - run:
+          name: mypy
+          command: |
+            mkdir -p .mypy-reports
+            poetry run mypy | tee .mypy-reports/report.txt || true
+            echo "Mypy report saved to .mypy-reports/report.txt"
+      - sonarcloud/scan
   unit-test-312:
     executor: python312
     steps:
@@ -88,5 +115,8 @@ workflows:
     jobs:
       - unit-test-39
       - unit-test-310
-      - unit-test-311
+      - unit-test-311:
+          context:
+            - SONARCLOUD
       - unit-test-312
+  
