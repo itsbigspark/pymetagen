@@ -14,6 +14,7 @@ from pymetagen.utils import (
     get_nested_path,
     map_inspection_modes,
     map_string_to_list_inspection_modes,
+    selectively_update_dict,
 )
 
 input_paths = ["input_csv_path", "input_parquet_path", "input_xlsx_path"]
@@ -121,7 +122,7 @@ def test_map_inspection_modes_raises_error(inspection_modes: Sequence[str]):
     )
 
 
-class TestCustomJSONDecoder:
+class TestMetaGenUtilsCustomJSONDecoder:
     def test_custom_json_decoder(self):
         path = Path("tests/data/sample.json")
         with path.open("r") as f:
@@ -146,7 +147,7 @@ class TestCustomJSONDecoder:
         }
 
 
-class TestCustomJSONEncoder:
+class TestMetaGenUtilsCustomJSONEncoder:
     def test_custom_json_encoder(self, tmp_dir_path: Path):
         data = {
             "name": "John Doe",
@@ -190,3 +191,19 @@ class TestCustomJSONEncoder:
                 {"type": "work", "number": "123-456-7890"},
             ],
         }
+
+
+class TestMetaGenUtilsFunctions:
+    def test_selectively_update_dict(self):
+        dict1 = {"a": 1, "b": 2, "c": 3}
+        dict2 = {"b": 4, "c": 5, "d": 6}
+        updated_dict = {
+            "a": 1,
+            "b": 4,
+            "c": 5,
+            "d": 6,
+        }
+
+        selectively_update_dict(dict1, dict2)
+
+        assert dict1 == updated_dict

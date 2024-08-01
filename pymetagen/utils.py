@@ -4,6 +4,7 @@ import datetime
 import json
 import os
 from collections.abc import Sequence
+from copy import deepcopy
 from enum import Enum
 from glob import glob
 from pathlib import Path
@@ -51,24 +52,32 @@ class InspectionMode(EnumListMixin, str, Enum):
     sample = "sample"
 
 
-def selectively_update_dict(d: dict[str, Any], new_d: dict[str, Any]) -> None:
+def selectively_update_dict(
+    d: dict[str, Any], new_d: dict[str, Any]
+) -> dict[str, Any]:
     """
     Selectively update dictionary d with any values that are in new_d,
     but being careful only to update keys in dictionaries that are present
-    in new_d.
+    in new_d. This is useful for updating nested dictionaries.
 
     Args:
         d: dictionary with string keys
         new_d: dictionary with string keys
+
+    Returns:
+        updated dictionary
     """
+    updated_dict = deepcopy(d)
     for k, v in new_d.items():
-        if isinstance(v, dict) and k in d:
-            if isinstance(d[k], dict):
-                selectively_update_dict(d[k], v)
+        if isinstance(v, dict) and k in updated_dict:
+            if isinstance(updated_dict[k], dict):
+                updated_dict = selectively_update_dict(updated_dict[k], v)
             else:
-                d[k] = v
+                updated_dict[k] = v
         else:
-            d[k] = v
+            updated_dict[k] = v
+
+    return updated_dict
 
 
 def collect(df: DataFrameT, streaming: bool = True) -> pl.DataFrame:

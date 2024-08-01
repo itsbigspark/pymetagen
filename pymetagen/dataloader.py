@@ -131,7 +131,7 @@ class DataLoader:
     ) -> None:
         if polars_read_csv_options is None:
             return
-        selectively_update_dict(
+        self.polars_read_csv_options = selectively_update_dict(
             self.polars_read_csv_options, polars_read_csv_options
         )
 
