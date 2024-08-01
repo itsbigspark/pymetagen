@@ -19,6 +19,21 @@ commands:
           key: poetry-cache-{{ checksum "poetry.lock" }}
           paths:
             - /home/circleci/.cache/pypoetry
+
+  checkout-full-install:
+    description: |
+      Checkout the code and install dependencies
+    steps:
+      - checkout
+      - restore_cache:
+          key: poetry-cache-{{ checksum "poetry.lock" }}
+      - run:
+          name: Install dependencies
+          command: poetry install
+      - save_cache:
+          key: poetry-cache-{{ checksum "poetry.lock" }}
+          paths:
+            - /home/circleci/.cache/pypoetry
   
   save-test-results:
     description: |
@@ -69,7 +84,7 @@ jobs:
   unit-test-311:
     executor: python311
     steps:
-      - checkout-install
+      - checkout-full-install # install all dependencies for mypy
       - run:
           name: Run tests
           command: |

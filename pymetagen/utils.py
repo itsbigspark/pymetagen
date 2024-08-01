@@ -16,7 +16,7 @@ import polars as pl
 from pymetagen._typing import DataFrameT
 
 if TYPE_CHECKING:
-    from typing_extensions import Self
+    from typing import Self
 
     from pymetagen.datatypes import MetaGenSupportedLoadingMode
 
