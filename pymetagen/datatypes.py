@@ -6,6 +6,29 @@ from enum import Enum
 from pymetagen.utils import EnumListMixin
 
 
+class MetaGenMetadataColumns(EnumListMixin, str, Enum):
+    """
+    Columns in the metadata table.
+    """
+
+    NAME = "Name"
+    LONG_NAME = "Long Name"
+    TYPE = "Type"
+    DESCRIPTION = "Description"
+    MIN = "Min"
+    MAX = "Max"
+    MEAN = "Mean"
+    STD = "Std"
+    MIN_LENGTH = "Min Length"
+    MAX_LENGTH = "Max Length"
+    NUMBER_NULLS = "# nulls"
+    NUMBER_EMPTY_ZERO = "# empty/zero"
+    NUMBER_POSITIVE = "# positive"
+    NUMBER_NEGATIVE = "# negative"
+    NUMBER_UNIQUE = "# unique"
+    VALUES = "Values"
+
+
 class MetaGenSupportedLoadingMode(EnumListMixin, str, Enum):
     """
     MetaGen supported loading modes.
