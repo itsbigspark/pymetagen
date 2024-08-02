@@ -165,6 +165,9 @@ class TestMetaGenUtilsCustomJSONEncoder:
                 {"type": "home", "number": "123-456-7890"},
                 {"type": "work", "number": "123-456-7890"},
             ],
+            "sets": {1, 3, 2},
+            "timedelta": datetime.timedelta(days=1),
+            "enum": InspectionMode.head,
         }
         path = tmp_dir_path / "sample.json"
         with path.open("w") as f:
@@ -190,6 +193,9 @@ class TestMetaGenUtilsCustomJSONEncoder:
                 {"type": "home", "number": "123-456-7890"},
                 {"type": "work", "number": "123-456-7890"},
             ],
+            "sets": [1, 2, 3],
+            "timedelta": "1 day, 0:00:00",
+            "enum": "head",
         }
 
 

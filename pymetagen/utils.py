@@ -200,17 +200,15 @@ def extract_data(
 class CustomEncoder(json.JSONEncoder):
     def default(self, obj: object):
         if isinstance(obj, set):
-            return list(obj)
-        if isinstance(obj, datetime.date):
+            return list(dict.fromkeys(obj))
+        if (type(obj) is datetime.date) or isinstance(obj, datetime.time):
             return obj.isoformat()
-        if isinstance(obj, datetime.time):
-            return obj.isoformat()
-        if isinstance(obj, datetime.timedelta):
-            return str(obj)
         if isinstance(obj, Enum):
             return obj.value
         if isinstance(obj, datetime.datetime):
             return obj.isoformat(timespec="seconds")
+        if isinstance(obj, datetime.timedelta):
+            return str(obj)
         return json.JSONEncoder.default(self, obj)
 
 
