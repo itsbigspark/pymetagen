@@ -195,8 +195,8 @@ class MetaGen:
         )
 
         metadata: dict[Hashable, dict[Hashable, Any]] = {}
-        schema = self.data.collect_schema()
-        length_of_columns = schema.len()
+        schema = self.data.columns
+        length_of_columns = len(schema)
 
         simple_metadata = self._get_simple_metadata(
             columns_to_drop=columns_to_drop
@@ -313,9 +313,7 @@ class MetaGen:
         )
 
         types_: dict[Hashable, str] = {}
-        for col, type_ in zip(
-            self.data.collect_schema().names(), self.data.dtypes
-        ):
+        for col, type_ in zip(self.data.columns, self.data.dtypes):
             types_[col] = dtype_to_metagen_type(type_)
         metadata_table["Type"] = types_
 
@@ -325,7 +323,7 @@ class MetaGen:
         self, types: dict[Hashable, MetaGenDataType]
     ) -> dict[Hashable, int]:
         nulls: dict[Hashable, int] = {}
-        for col in self.data.collect_schema().names():
+        for col in self.data.columns:
             data = self.data.pipe(collect).select(col)
             null_count = data.null_count().row(0)[0]
             zero_count = (
@@ -340,7 +338,7 @@ class MetaGen:
         self, types: dict[Hashable, MetaGenDataType]
     ) -> dict[Hashable, int | None]:
         pos: dict[Hashable, int | None] = {}
-        for col in self.data.collect_schema().names():
+        for col in self.data.columns:
             pos_count = (
                 self.data.filter(pl.col(col) > 0).pipe(collect).shape[0]
                 if types[col] in MetaGenDataType.numeric_data_types()
@@ -353,7 +351,7 @@ class MetaGen:
         self, types: dict[Hashable, MetaGenDataType]
     ) -> dict[Hashable, int | None]:
         neg: dict[Hashable, int | None] = {}
-        for col in self.data.collect_schema().names():
+        for col in self.data.columns:
             neg_count = (
                 self.data.filter(pl.col(col) < 0).pipe(collect).shape[0]
                 if types[col] in MetaGenDataType.numeric_data_types()
@@ -366,7 +364,7 @@ class MetaGen:
         self, types: dict[Hashable, MetaGenDataType]
     ) -> dict[Hashable, int | None]:
         min_str_length: dict[Hashable, int | None] = {}
-        for col in self.data.collect_schema().names():
+        for col in self.data.columns:
             if types[col] in MetaGenDataType.categorical_data_types():
                 min_str_length[col] = (
                     self.data.with_columns(
@@ -388,7 +386,7 @@ class MetaGen:
         self, types: dict[Hashable, MetaGenDataType]
     ) -> dict[Hashable, int | None]:
         max_str_length: dict[Hashable, int | None] = {}
-        for col in self.data.collect_schema().names():
+        for col in self.data.columns:
             if types[col] in MetaGenDataType.categorical_data_types():
                 max_str_length[col] = (
                     self.data.with_columns(
@@ -415,7 +413,7 @@ class MetaGen:
 
     def _number_of_unique_counts(self) -> dict[Hashable, int]:
         unique_counts: dict[Hashable, int] = {}
-        for col in self.data.collect_schema().names():
+        for col in self.data.columns:
             if not self._is_column_all_null(col):
                 unique_counts[col] = (
                     self.data.select(col).pipe(collect).n_unique()
@@ -429,7 +427,7 @@ class MetaGen:
         self, max_number_of_unique_to_show: int = 10
     ) -> dict[Hashable, list[Any] | list[None] | None]:
         unique_values: dict[Hashable, list[Any] | list[None] | None] = {}
-        for col in self.data.collect_schema().names():
+        for col in self.data.columns:
             if not self._is_column_all_null(col):
                 values = (
                     self.data.select(col).pipe(collect).unique()[col].to_list()
@@ -594,7 +592,7 @@ class MetaGen:
         Inspect the data.
         """
         data_to_look = self.data if data is None else data
-        tbl_cols = tbl_cols or self.data.collect_schema().len()
+        tbl_cols = tbl_cols or len(self.data.columns)
         with pl.Config(
             fmt_str_lengths=fmt_str_lengths,
             tbl_cols=tbl_cols,
