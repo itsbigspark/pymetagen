@@ -195,15 +195,30 @@ class TestMetaGenUtilsCustomJSONEncoder:
 
 class TestMetaGenUtilsFunctions:
     def test_selectively_update_dict(self):
-        dict1 = {"a": 1, "b": 2, "c": 3}
-        dict2 = {"b": 4, "c": 5, "d": 6}
-        updated_dict = {
+        dict1 = {
             "a": 1,
-            "b": 4,
-            "c": 5,
-            "d": 6,
+            "c": {"d": 2, "e": "e"},
+            "f": [1, 2, 3],
+            "dt": datetime.datetime(2021, 1, 1),
+            "foo": "bar",
+            "g": {"h": 1, "i": [1, 2, 3]},
         }
-
-        selectively_update_dict(dict1, dict2)
-
-        assert dict1 == updated_dict
+        dict2 = {
+            "a": 2,
+            "b": 2,
+            "c": {"d": 3},
+            "f": [4, 5, 6],
+            "dt": datetime.datetime(2021, 1, 2),
+            "g": {"h": 2, "i": [4, 5, 6]},
+        }
+        expected_dict = {
+            "a": 2,
+            "b": 2,
+            "c": {"d": 3, "e": "e"},
+            "f": [4, 5, 6],
+            "dt": datetime.datetime(2021, 1, 2),
+            "foo": "bar",
+            "g": {"h": 2, "i": [4, 5, 6]},
+        }
+        updated_dict = selectively_update_dict(dict1, dict2)
+        assert updated_dict == expected_dict

@@ -53,25 +53,22 @@ class InspectionMode(EnumListMixin, str, Enum):
 
 
 def selectively_update_dict(
-    d: dict[str, Any], new_d: dict[str, Any]
+    original_dict: dict[str, Any], new_dict: dict[str, Any]
 ) -> dict[str, Any]:
     """
-    Selectively update dictionary d with any values that are in new_d,
-    but being careful only to update keys in dictionaries that are present
-    in new_d. This is useful for updating nested dictionaries.
+    Selectively update dictionary original_dict with any values that are in
+    new_dict, but being careful only to update keys in dictionaries that are
+    present in new_d.
 
     Args:
-        d: dictionary with string keys
-        new_d: dictionary with string keys
-
-    Returns:
-        updated dictionary
+        original_dict: dictionary with string keys
+        new_dict: dictionary with string keys
     """
-    updated_dict = deepcopy(d)
-    for k, v in new_d.items():
+    updated_dict = deepcopy(original_dict)
+    for k, v in new_dict.items():
         if isinstance(v, dict) and k in updated_dict:
             if isinstance(updated_dict[k], dict):
-                updated_dict = selectively_update_dict(updated_dict[k], v)
+                updated_dict[k] = selectively_update_dict(updated_dict[k], v)
             else:
                 updated_dict[k] = v
         else:
