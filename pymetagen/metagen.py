@@ -255,7 +255,7 @@ class MetaGen:
 
         metadata["Description"] = {}
         metadata["Long Name"] = {}
-        for column in schema.names():
+        for column in schema:
             description_data: dict[str, Any] = self.descriptions.get(
                 column, {}
             )
