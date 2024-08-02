@@ -205,12 +205,12 @@ class CustomEncoder(json.JSONEncoder):
             return obj.isoformat()
         if isinstance(obj, datetime.time):
             return obj.isoformat()
-        if isinstance(obj, datetime.datetime):
-            return obj.isoformat(sep="T", timespec="seconds")
         if isinstance(obj, datetime.timedelta):
             return str(obj)
         if isinstance(obj, Enum):
             return obj.value
+        if isinstance(obj, datetime.datetime):
+            return obj.isoformat(timespec="seconds")
         return json.JSONEncoder.default(self, obj)
 
 
