@@ -51,7 +51,7 @@ class TestMetaGen:
             data=df,
         ).compute_metadata()
 
-        assert set(metadata.index) == set(df.collect_schema().names())
+        assert set(metadata.index) == set(df.columns)
 
     @pytest.mark.parametrize(
         "extension, read_metadata",
@@ -87,7 +87,7 @@ class TestMetaGen:
         if extension == "json":
             outdata.reset_index(names=["Name"], inplace=True)
 
-        assert len(outdata) == len(df.collect_schema().names())
+        assert len(outdata) == len(df.columns)
         assert list(outdata.columns) == [
             "Name",
             "Long Name",
