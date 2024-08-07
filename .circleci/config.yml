@@ -15,6 +15,9 @@ commands:
       Checkout the code and install dependencies
     steps:
       - checkout
+      - run:
+          name: Lock
+          command: poetry lock
       - restore_cache:
           key: poetry-cache-{{ checksum "poetry.lock" }}
       - run:
@@ -62,10 +65,6 @@ jobs:
     executor: python
     steps:
       - install-python
-      - run:
-          name: lock
-          command: |
-            poetry lock
       - checkout-install
       - restore_cache:
           key: tox-{{ checksum "tox.ini" }}-{{ checksum "pyproject.toml" }}
