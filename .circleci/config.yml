@@ -37,7 +37,7 @@ commands:
             pyenv install -s << pipeline.parameters.pythonversions >>
             pyenv global 3.12
       - save_cache:
-          key: pyenv-cache
+          key: pyenv-cache-<< pipeline.parameters.pythonversions >>
           paths:
             - /home/circleci/.pyenv/versions
 
