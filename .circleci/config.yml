@@ -62,6 +62,10 @@ jobs:
     executor: python
     steps:
       - install-python
+      - run:
+          name: lock
+          command: |
+            poetry lock
       - checkout-install
       - run:
           name: Run tests
