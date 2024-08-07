@@ -1,5 +1,10 @@
 version: 2.1
 
+parameters:
+  pythonversions:
+    type: string
+    default: "3.9 3.10 3.11 3.12"
+
 orbs:
   sonarcloud: sonarsource/sonarcloud@2.0.0
 
@@ -14,27 +19,28 @@ commands:
           key: poetry-cache-{{ checksum "poetry.lock" }}
       - run:
           name: Install dependencies
-          command: poetry install --only=dev
-      - save_cache:
-          key: poetry-cache-{{ checksum "poetry.lock" }}
-          paths:
-            - /home/circleci/.cache/pypoetry
-
-  checkout-full-install:
-    description: |
-      Checkout the code and install dependencies
-    steps:
-      - checkout
-      - restore_cache:
-          key: poetry-cache-{{ checksum "poetry.lock" }}
-      - run:
-          name: Install dependencies
           command: poetry install
       - save_cache:
           key: poetry-cache-{{ checksum "poetry.lock" }}
           paths:
             - /home/circleci/.cache/pypoetry
-  
+
+  install-python:
+    description: |
+      Install Python from pyenv
+    steps:
+      - restore_cache:
+          key: pyenv-cache-<< pipeline.parameters.pythonversions >>
+      - run:
+          name: Install Python
+          command: |
+            pyenv install -s << pipeline.parameters.pythonversions >>
+            pyenv global 3.12
+      - save_cache:
+          key: pyenv-cache
+          paths:
+            - /home/circleci/.pyenv/versions
+
   save-test-results:
     description: |
       Save test results
@@ -45,50 +51,22 @@ commands:
           path: test-reports     
 
 executors:
-  python39:
-    docker:
-      - image: cimg/python:3.9
-    resource_class: small
-  python310:
-    docker:
-      - image: cimg/python:3.10
-    resource_class: small
-  python311:
-    docker:
-      - image: cimg/python:3.11
-    resource_class: small
-  python312:
+  python:
     docker:
       - image: cimg/python:3.12
     resource_class: small
 
+
 jobs:
-  unit-test-39:
-    executor: python39
+  unit-test:
+    executor: python
     steps:
+      - install-python
       - checkout-install
       - run:
           name: Run tests
           command: |
-            poetry run tox -e py39
-      - save-test-results
-  unit-test-310:
-    executor: python310
-    steps:
-      - checkout-install
-      - run:
-          name: Run tests
-          command: |
-            poetry run tox -e py310
-      - save-test-results
-  unit-test-311:
-    executor: python311
-    steps:
-      - checkout-full-install # install all dependencies for mypy
-      - run:
-          name: Run tests
-          command: |
-            poetry run tox -e py311 -- -- --cov=pymetagen
+            poetry run tox -- -- --cov=pymetagen
             poetry run coverage report -m
             poetry run coverage xml -o .coverage-reports/coverage.xml
       - save-test-results
@@ -99,24 +77,14 @@ jobs:
             poetry run mypy | tee .mypy-reports/report.txt || true
             echo "Mypy report saved to .mypy-reports/report.txt"
       - sonarcloud/scan
-  unit-test-312:
-    executor: python312
-    steps:
-      - checkout-install
-      - run:
-          name: Run tests
-          command: |
-            poetry run tox -e py312
-      - save-test-results
+
 
 workflows:
   commit:
     # run on every commit
     jobs:
-      - unit-test-39
-      - unit-test-310
-      - unit-test-311:
+      - unit-test:
           context:
             - SONARCLOUD
-      - unit-test-312
+
   
