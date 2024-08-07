@@ -67,12 +67,18 @@ jobs:
           command: |
             poetry lock
       - checkout-install
+      - restore_cache:
+          key: tox-{{ checksum "tox.ini" }}-{{ checksum "pyproject.toml" }}
       - run:
           name: Run tests
           command: |
             poetry run tox -- -- --cov=pymetagen
             poetry run coverage report -m
             poetry run coverage xml -o .coverage-reports/coverage.xml
+      - save_cache:
+          paths:
+            - .tox
+          key: tox-{{ checksum "tox.ini" }}-{{ checksum "pyproject.toml" }}
       - save-test-results
       - run:
           name: mypy
