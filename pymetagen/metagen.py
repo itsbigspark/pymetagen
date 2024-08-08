@@ -27,6 +27,7 @@ from pymetagen._typing import (
 from pymetagen.dataloader import DataLoader, LazyDataLoader
 from pymetagen.datatypes import (
     MetaGenDataType,
+    MetaGenMetadataColumn,
     MetaGenSupportedFileExtension,
     MetaGenSupportedLoadingMode,
     dtype_to_metagen_type,
@@ -172,22 +173,7 @@ class MetaGen:
             "50%",
             "75%",
         ]
-        pymetagen_columns = [
-            "Long Name",
-            "Type",
-            "Description",
-            "Min",
-            "Max",
-            "Min Length",
-            "Max Length",
-            "# nulls",
-            "# empty/zero",
-            "# positive",
-            "# negative",
-            "# unique",
-            "Values",
-        ]
-
+        pymetagen_columns = MetaGenMetadataColumn.pymetagen_columns()
         assert_msg = (
             "Internal error: while calculating '{}' metadata."
             " Number of columns in metadata table does not match number of"
@@ -206,69 +192,79 @@ class MetaGen:
         metadata.update(simple_metadata)
 
         number_of_null_and_zeros = self._number_of_null_and_zeros(
-            metadata["Type"]
+            metadata[MetaGenMetadataColumn.TYPE]
         )
         assert (
             len(number_of_null_and_zeros) == length_of_columns
         ), assert_msg.format("null and zeros")
-        metadata["# empty/zero"] = number_of_null_and_zeros
+        metadata[MetaGenMetadataColumn.NUMBER_EMPTY_ZERO] = (
+            number_of_null_and_zeros
+        )
 
         number_of_positive_values = self._number_of_positive_values(
-            metadata["Type"]
+            metadata[MetaGenMetadataColumn.TYPE]
         )
         assert (
             len(number_of_positive_values) == length_of_columns
         ), assert_msg.format("positive values")
-        metadata["# positive"] = number_of_positive_values
+        metadata[MetaGenMetadataColumn.NUMBER_POSITIVE] = (
+            number_of_positive_values
+        )
 
         number_of_negative_values = self._number_of_negative_values(
-            metadata["Type"]
+            metadata[MetaGenMetadataColumn.TYPE]
         )
         assert (
             len(number_of_negative_values) == length_of_columns
         ), assert_msg.format("negative values")
-        metadata["# negative"] = number_of_negative_values
+        metadata[MetaGenMetadataColumn.NUMBER_NEGATIVE] = (
+            number_of_negative_values
+        )
 
         minimal_string_length = self._minimal_string_length(metadata["Type"])
         assert (
             len(minimal_string_length) == length_of_columns
         ), assert_msg.format("minimal string length")
-        metadata["Min Length"] = minimal_string_length
+        metadata[MetaGenMetadataColumn.MIN_LENGTH] = minimal_string_length
 
         maximal_string_length = self._maximal_string_length(metadata["Type"])
         assert (
             len(maximal_string_length) == length_of_columns
         ), assert_msg.format("maximal string length")
-        metadata["Max Length"] = maximal_string_length
+        metadata[MetaGenMetadataColumn.MAX_LENGTH] = maximal_string_length
 
         number_of_unique_counts = self._number_of_unique_counts()
         assert (
             len(number_of_unique_counts) == length_of_columns
         ), assert_msg.format("number of unique counts")
-        metadata["# unique"] = number_of_unique_counts
+        metadata[MetaGenMetadataColumn.NUMBER_UNIQUE] = number_of_unique_counts
 
         number_of_unique_values = self._number_of_unique_values()
         assert (
             len(number_of_unique_values) == length_of_columns
         ), assert_msg.format("number of unique values")
-        metadata["Values"] = number_of_unique_values
+        metadata[MetaGenMetadataColumn.VALUES] = number_of_unique_values
 
-        metadata["Description"] = {}
-        metadata["Long Name"] = {}
+        metadata[MetaGenMetadataColumn.DESCRIPTION] = {}
+        metadata[MetaGenMetadataColumn.LONG_NAME] = {}
         for column in schema:
             description_data: dict[str, Any] = self.descriptions.get(
                 column, {}
             )
-            metadata["Description"][column] = description_data.get(
-                "description", ""
+            metadata[MetaGenMetadataColumn.DESCRIPTION][column] = (
+                description_data.get("description", "")
             )
-            metadata["Long Name"][column] = description_data.get(
-                "long_name", ""
+            metadata[MetaGenMetadataColumn.LONG_NAME][column] = (
+                description_data.get("long_name", "")
             )
 
-        full_metadata = pd.DataFrame(metadata).replace(np.nan, None)
-        full_metadata.index.name = "Name"
-        return full_metadata[pymetagen_columns]
+        full_metadata = pd.DataFrame(
+            data=metadata,
+        ).replace(np.nan, None)
+        full_metadata.index.name = MetaGenMetadataColumn.NAME.value
+        return full_metadata[pymetagen_columns].rename(
+            columns=MetaGenMetadataColumn.as_dict()
+        )
 
     def metadata_by_output_format(
         self,
@@ -301,21 +297,27 @@ class MetaGen:
             .T.drop(columns=columns_to_drop)
             .rename(
                 columns={
-                    "null_count": "# nulls",
-                    "min": "Min",
-                    "max": "Max",
-                    "mean": "Mean",
-                    "std": "Std",
+                    "null_count": MetaGenMetadataColumn.NUMBER_NULLS,
+                    "min": MetaGenMetadataColumn.MIN,
+                    "max": MetaGenMetadataColumn.MAX,
+                    "mean": MetaGenMetadataColumn.MEAN,
+                    "std": MetaGenMetadataColumn.STD,
                 }
             )
-            .astype({"# nulls": int, "Min": str, "Max": str})
+            .astype(
+                {
+                    MetaGenMetadataColumn.NUMBER_NULLS: int,
+                    MetaGenMetadataColumn.MIN: str,
+                    MetaGenMetadataColumn.MAX: str,
+                }
+            )
             .to_dict()
         )
 
         types_: dict[Hashable, str] = {}
         for col, type_ in zip(self.data.columns, self.data.dtypes):
             types_[col] = dtype_to_metagen_type(type_)
-        metadata_table["Type"] = types_
+        metadata_table[MetaGenMetadataColumn.TYPE] = types_
 
         return metadata_table
 
@@ -498,7 +500,11 @@ class MetaGen:
         self, output_path: Path, metadata: OptionalPandasDataFrame
     ) -> None:
         metadata = metadata if metadata is not None else self._metadata
-        metadata.to_excel(output_path, sheet_name="Fields", index=False)
+        metadata.to_excel(
+            excel_writer=output_path,
+            sheet_name="Fields",
+            index=False,
+        )
 
     def _write_csv_metadata(
         self, output_path: Path, metadata: OptionalPandasDataFrame
