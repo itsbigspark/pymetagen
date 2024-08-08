@@ -591,14 +591,13 @@ class MetaGen:
         self,
         data: DataFrameT | None = None,
         tbl_rows: int = 10,
-        tbl_cols: int | None = None,
+        tbl_cols: int = -1,
         fmt_str_lengths: int = 50,
     ) -> None:
         """
         Inspect the data.
         """
         data_to_look = self.data if data is None else data
-        tbl_cols = tbl_cols or len(self.data.columns)
         with pl.Config(
             fmt_str_lengths=fmt_str_lengths,
             tbl_cols=tbl_cols,
