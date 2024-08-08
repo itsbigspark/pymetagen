@@ -13,3 +13,4 @@ General changes:
 Development changes:
 
 - Adds new method in `MetaGen` class to write extracts to a file.
+- Uses `Enum` class to define the metadata colum names.
