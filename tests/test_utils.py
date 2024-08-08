@@ -1,14 +1,20 @@
 from __future__ import annotations
 
+import datetime
+import json
 from collections.abc import Sequence
+from pathlib import Path
 
 import pytest
 
 from pymetagen.utils import (
+    CustomDecoder,
+    CustomEncoder,
     InspectionMode,
     get_nested_path,
     map_inspection_modes,
     map_string_to_list_inspection_modes,
+    selectively_update_dict,
 )
 
 input_paths = ["input_csv_path", "input_parquet_path", "input_xlsx_path"]
@@ -114,3 +120,111 @@ def test_map_inspection_modes_raises_error(inspection_modes: Sequence[str]):
         f"inspection_modes must be one of {InspectionMode.list()}"
         == exc_info.value.args[0]
     )
+
+
+class TestMetaGenUtilsCustomJSONDecoder:
+    def test_custom_json_decoder(self):
+        path = Path("tests/data/sample.json")
+        with path.open("r") as f:
+            data = json.load(f, cls=CustomDecoder)
+
+        assert data == {
+            "name": "John Doe",
+            "dob": datetime.date(1990, 1, 1),
+            "date": datetime.date(2021, 1, 1),
+            "timestamp": datetime.datetime(2021, 1, 1, 0, 0),
+            "age": 30,
+            "address": {
+                "street": "123 Main St",
+                "city": "Anytown",
+                "state": "AS",
+                "zip": "12345",
+            },
+            "phones": [
+                {"type": "home", "number": "123-456-7890"},
+                {"type": "work", "number": "123-456-7890"},
+            ],
+        }
+
+
+class TestMetaGenUtilsCustomJSONEncoder:
+    def test_custom_json_encoder(self, tmp_dir_path: Path):
+        data = {
+            "name": "John Doe",
+            "dob": datetime.date(1990, 1, 1),
+            "date": datetime.date(2021, 1, 1),
+            "timestamp": datetime.datetime(2021, 1, 1, 0, 0),
+            "age": 30,
+            "address": {
+                "street": "123 Main St",
+                "city": "Anytown",
+                "state": "AS",
+                "zip": "12345",
+            },
+            "phones": [
+                {"type": "home", "number": "123-456-7890"},
+                {"type": "work", "number": "123-456-7890"},
+            ],
+            "sets": {1, 3, 2},
+            "timedelta": datetime.timedelta(days=1),
+            "enum": InspectionMode.head,
+        }
+        path = tmp_dir_path / "sample.json"
+        with path.open("w") as f:
+            json.dump(data, f, cls=CustomEncoder, indent=4)
+
+        assert path.exists()
+        with path.open("r") as f:
+            loaded_data = json.load(f)
+
+        assert loaded_data == {
+            "name": "John Doe",
+            "dob": "1990-01-01",
+            "date": "2021-01-01",
+            "timestamp": "2021-01-01T00:00:00",
+            "age": 30,
+            "address": {
+                "street": "123 Main St",
+                "city": "Anytown",
+                "state": "AS",
+                "zip": "12345",
+            },
+            "phones": [
+                {"type": "home", "number": "123-456-7890"},
+                {"type": "work", "number": "123-456-7890"},
+            ],
+            "sets": [1, 2, 3],
+            "timedelta": "1 day, 0:00:00",
+            "enum": "head",
+        }
+
+
+class TestMetaGenUtilsFunctions:
+    def test_selectively_update_dict(self):
+        dict1 = {
+            "a": 1,
+            "c": {"d": 2, "e": "e"},
+            "f": [1, 2, 3],
+            "dt": datetime.datetime(2021, 1, 1),
+            "foo": "bar",
+            "g": {"h": 1, "i": [1, 2, 3]},
+        }
+        dict2 = {
+            "a": 2,
+            "b": 2,
+            "c": {"d": 3},
+            "f": [4, 5, 6],
+            "dt": datetime.datetime(2021, 1, 2),
+            "g": {"h": 2, "i": [4, 5, 6]},
+        }
+        expected_dict = {
+            "a": 2,
+            "b": 2,
+            "c": {"d": 3, "e": "e"},
+            "f": [4, 5, 6],
+            "dt": datetime.datetime(2021, 1, 2),
+            "foo": "bar",
+            "g": {"h": 2, "i": [4, 5, 6]},
+        }
+        updated_dict = selectively_update_dict(dict1, dict2)
+        assert updated_dict == expected_dict

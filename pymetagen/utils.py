@@ -4,6 +4,7 @@ import datetime
 import json
 import os
 from collections.abc import Sequence
+from copy import deepcopy
 from enum import Enum
 from glob import glob
 from pathlib import Path
@@ -51,24 +52,29 @@ class InspectionMode(EnumListMixin, str, Enum):
     sample = "sample"
 
 
-def selectively_update_dict(d: dict[str, Any], new_d: dict[str, Any]) -> None:
+def selectively_update_dict(
+    original_dict: dict[str, Any], new_dict: dict[str, Any]
+) -> dict[str, Any]:
     """
-    Selectively update dictionary d with any values that are in new_d,
-    but being careful only to update keys in dictionaries that are present
-    in new_d.
+    Selectively update dictionary original_dict with any values that are in
+    new_dict, but being careful only to update keys in dictionaries that are
+    present in new_d.
 
     Args:
-        d: dictionary with string keys
-        new_d: dictionary with string keys
+        original_dict: dictionary with string keys
+        new_dict: dictionary with string keys
     """
-    for k, v in new_d.items():
-        if isinstance(v, dict) and k in d:
-            if isinstance(d[k], dict):
-                selectively_update_dict(d[k], v)
+    updated_dict = deepcopy(original_dict)
+    for k, v in new_dict.items():
+        if isinstance(v, dict) and k in updated_dict:
+            if isinstance(updated_dict[k], dict):
+                updated_dict[k] = selectively_update_dict(updated_dict[k], v)
             else:
-                d[k] = v
+                updated_dict[k] = v
         else:
-            d[k] = v
+            updated_dict[k] = v
+
+    return updated_dict
 
 
 def collect(df: DataFrameT, streaming: bool = True) -> pl.DataFrame:
@@ -194,14 +200,14 @@ def extract_data(
 class CustomEncoder(json.JSONEncoder):
     def default(self, obj: object):
         if isinstance(obj, set):
-            return list(obj)
-        if isinstance(obj, datetime.datetime | datetime.date | datetime.time):
+            return list(dict.fromkeys(obj))
+        if (type(obj) is datetime.date) or isinstance(obj, datetime.time):
             return obj.isoformat()
-        if isinstance(obj, datetime.datetime):
-            return obj.isoformat(sep="T", timespec="seconds")
-        if isinstance(obj, datetime.timedelta):
-            return str(obj)
         if isinstance(obj, Enum):
+            return obj.value
+        if isinstance(obj, datetime.datetime):
+            return obj.isoformat(timespec="seconds")
+        if isinstance(obj, datetime.timedelta):
             return str(obj)
         return json.JSONEncoder.default(self, obj)
 
