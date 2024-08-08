@@ -32,34 +32,16 @@ class MetaGenMetadataColumn(EnumListMixin, str, Enum):
     VALUES = "Values"
 
     @classmethod
-    def dtypes_dict(
-        cls, columns_to_include: Sequence[str] | None = None
-    ) -> SchemaDict:
-        dtypes_dict = {
-            cls.NAME.value: pl.Utf8,
-            cls.LONG_NAME.value: pl.Utf8,
-            cls.TYPE.value: pl.Utf8,
-            cls.DESCRIPTION.value: pl.Utf8,
-            cls.MIN.value: pl.Utf8,
-            cls.MAX.value: pl.Utf8,
-            cls.STD.value: pl.Float64,
-            cls.MIN_LENGTH.value: pl.Int64,
-            cls.MAX_LENGTH.value: pl.Int64,
-            cls.NUMBER_NULLS.value: pl.Int64,
-            cls.NUMBER_EMPTY_ZERO.value: pl.Int64,
-            cls.NUMBER_POSITIVE.value: pl.Int64,
-            cls.NUMBER_NEGATIVE.value: pl.Int64,
-            cls.NUMBER_UNIQUE.value: pl.Int64,
-            cls.VALUES.value: pl.List,
+    def interger_dtypes(cls) -> SchemaDict:
+        return {
+            cls.MIN_LENGTH: pl.Int64,
+            cls.MAX_LENGTH: pl.Int64,
+            cls.NUMBER_NULLS: pl.Int64,
+            cls.NUMBER_EMPTY_ZERO: pl.Int64,
+            cls.NUMBER_POSITIVE: pl.Int64,
+            cls.NUMBER_NEGATIVE: pl.Int64,
+            cls.NUMBER_UNIQUE: pl.Int64,
         }
-        if columns_to_include is None:
-            return dtypes_dict
-        if columns_to_include is not None and not all(
-            col in cls.__members__ for col in columns_to_include
-        ):
-            raise ValueError("Invalid column name in columns_to_include.")
-
-        return {col: dtypes_dict[col] for col in columns_to_include}
 
     @classmethod
     def pymetagen_columns(
