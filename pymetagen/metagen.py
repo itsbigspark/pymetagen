@@ -150,7 +150,11 @@ class MetaGen:
 
     @property
     def _polars_metadata(self):
-        return pl.DataFrame(data=self._metadata.to_dict("list"), strict=False)
+        return pl.DataFrame(
+            data=self._metadata.to_dict("list"),
+            strict=False,
+            schema_overrides=MetaGenMetadataColumn.interger_dtypes(),
+        )
 
     @staticmethod
     def _load_descriptions_from_json(
