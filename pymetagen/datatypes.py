@@ -35,7 +35,7 @@ class MetaGenMetadataColumn(EnumListMixin, str, Enum):
     def dtypes_dict(
         cls, columns_to_include: Sequence[str] | None = None
     ) -> SchemaDict:
-        dtypes_dict = {
+        dtypes_dict: SchemaDict = {
             cls.NAME.value: pl.Utf8,
             cls.LONG_NAME.value: pl.Utf8,
             cls.TYPE.value: pl.Utf8,
