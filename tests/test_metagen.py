@@ -9,7 +9,10 @@ import pytest
 
 from pymetagen import MetaGen, json_metadata_to_pandas
 from pymetagen._typing import DataFrameT
-from pymetagen.datatypes import MetaGenSupportedLoadingMode
+from pymetagen.datatypes import (
+    MetaGenMetadataColumn,
+    MetaGenSupportedLoadingMode,
+)
 from pymetagen.exceptions import (
     FileTypeUnsupportedError,
     LoadingModeUnsupportedError,
@@ -88,22 +91,9 @@ class TestMetaGen:
             outdata.reset_index(names=["Name"], inplace=True)
 
         assert len(outdata) == len(df.collect_schema().names())
-        assert list(outdata.columns) == [
-            "Name",
-            "Long Name",
-            "Type",
-            "Description",
-            "Min",
-            "Max",
-            "Min Length",
-            "Max Length",
-            "# nulls",
-            "# empty/zero",
-            "# positive",
-            "# negative",
-            "# unique",
-            "Values",
-        ]
+        assert list(
+            outdata.columns
+        ) == MetaGenMetadataColumn.pymetagen_columns(include_name_column=True)
 
     @pytest.mark.parametrize(
         "column_name, expected_value",
