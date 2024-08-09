@@ -76,7 +76,7 @@ POLARS_DEFAULT_READ_PARQUET_OPTIONS: dict[str, Any] = {}
 class DataLoader:
     def __init__(
         self,
-        path: Path,
+        path: Path | str,
         polars_read_csv_options: None | dict[str, Any] = None,
         sheet_name: str | None = None,
         _default_read_csv_options: dict[
@@ -89,7 +89,7 @@ class DataLoader:
             str, Any
         ] = POLARS_DEFAULT_READ_PARQUET_OPTIONS,
     ):
-        self.path = path
+        self.path = Path(path)
         self.polars_read_csv_options = _default_read_csv_options.copy()
         self._update_read_csv_polars_options(polars_read_csv_options)
         self.polars_read_excel_options = _default_read_excel_options.copy()
@@ -110,9 +110,7 @@ class DataLoader:
             MetaGenSupportedFileExtension.NONE: self._load_none_suffix,
         }
         try:
-            file_extension = MetaGenSupportedFileExtension(
-                Path(self.path).suffix
-            )
+            file_extension = MetaGenSupportedFileExtension(self.path.suffix)
         except ValueError:
             raise FileTypeUnsupportedError(
                 f"File extension for {self.path} is not supported"
@@ -177,7 +175,7 @@ class DataLoader:
 class LazyDataLoader(DataLoader):
     def __init__(
         self,
-        path: Path,
+        path: Path | str,
         polars_read_csv_options: None | dict[str, Any] = None,
         sheet_name: str | None = None,
     ):

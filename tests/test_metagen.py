@@ -220,7 +220,7 @@ class TestMetaGenFromPath:
         file_path: Path = request.getfixturevalue(path)
         MetaGen.from_path(
             path=file_path,
-            mode=mode,
+            loading_mode=mode,
         )
 
     def test_unsupported_path(
@@ -231,7 +231,7 @@ class TestMetaGenFromPath:
         with pytest.raises(FileTypeUnsupportedError):
             MetaGen.from_path(
                 path=tmp_dir_path / "test.unsupported",
-                mode=mode,
+                loading_mode=mode,
             )
 
     @pytest.mark.parametrize(
@@ -251,7 +251,9 @@ class TestMetaGenFromPath:
         description_path: Path = request.getfixturevalue(descriptions_path)
 
         metagen = MetaGen.from_path(
-            path=input_csv_path, descriptions_path=description_path, mode=mode
+            path=input_csv_path,
+            descriptions_path=description_path,
+            loading_mode=mode,
         )
         metadata = metagen.compute_metadata()
 
@@ -265,7 +267,7 @@ def test_from_path_unsupported_mode(tmp_dir_path: Path):
     with pytest.raises(LoadingModeUnsupportedError):
         MetaGen.from_path(
             path=tmp_dir_path / "test.csv",
-            mode="unsupported_mode",  # type: ignore
+            loading_mode="unsupported_mode",  # type: ignore
         )
 
 
@@ -281,7 +283,7 @@ def test_load_file_extension_none(
     with pytest.raises(FileTypeUnsupportedError):
         MetaGen.from_path(
             path=tmp_dir_path / "test",
-            mode=MetaGenSupportedLoadingMode.LAZY,
+            loading_mode=MetaGenSupportedLoadingMode.LAZY,
         )
 
 
@@ -289,7 +291,7 @@ def test_file_extension_none_for_parquet_directories():
     path = Path("tests/data/input_ab_partition")
     MetaGen.from_path(
         path=path,
-        mode=MetaGenSupportedLoadingMode.LAZY,
+        loading_mode=MetaGenSupportedLoadingMode.LAZY,
     )
 
 
@@ -298,7 +300,7 @@ def test_file_extension_none_for_directories_with_no_parquet_files():
     with pytest.raises(FileTypeUnsupportedError):
         MetaGen.from_path(
             path=path,
-            mode=MetaGenSupportedLoadingMode.LAZY,
+            loading_mode=MetaGenSupportedLoadingMode.LAZY,
         )
 
 
@@ -319,11 +321,11 @@ class TestMetaGenExtractData:
         inspection_mode: InspectionMode,
     ):
         metagen = MetaGen.from_path(
-            Path("tests/data/input_ab_partition.parquet"), mode=mode
+            Path("tests/data/input_ab_partition.parquet"), loading_mode=mode
         )
 
         extract = metagen.extract_data(
-            tbl_rows=2, mode=mode, inspection_mode=inspection_mode
+            tbl_rows=2, loading_mode=mode, inspection_mode=inspection_mode
         )
 
         assert extract.shape[0] == 2
@@ -348,12 +350,12 @@ class TestMetaGenWriteExtracts:
     ):
         metagen = MetaGen.from_path(
             path=Path("tests/data/input_ab_partition.parquet"),
-            mode=mode,
+            loading_mode=mode,
         )
         file_name = f"test-{inspection_mode}.csv"
         metagen.write_extract_by_inspection_mode(
             output_path=tmp_dir_path / file_name,
-            mode=mode,
+            loading_mode=mode,
             inspection_mode=inspection_mode,
             random_seed=None,
             number_rows=2,
@@ -373,12 +375,13 @@ class TestMetaGenWriteExtracts:
         mode: MetaGenSupportedLoadingMode,
     ):
         metagen = MetaGen.from_path(
-            path=Path("tests/data/input_ab_partition.parquet"), mode=mode
+            path=Path("tests/data/input_ab_partition.parquet"),
+            loading_mode=mode,
         )
         metagen.write_extracts(
             output_path=tmp_dir_path / "test.csv",
             number_rows=2,
-            mode=mode,
+            loading_mode=mode,
         )
         for inspection_mode in InspectionMode.values():
             file_name = f"test-{inspection_mode}.csv"

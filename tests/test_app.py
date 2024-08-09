@@ -175,7 +175,7 @@ class TestCli:
                 "tests/data/testdata.csv",
                 "-o",
                 str(outpath),
-                "--mode",
+                "--loading-mode",
                 mode,
                 "-q",
                 sql_query,
