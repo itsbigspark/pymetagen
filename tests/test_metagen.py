@@ -50,11 +50,10 @@ class TestMetaGen:
 
     def test_compute_metadata(self, data: str, request: pytest.FixtureRequest):
         df: DataFrameT = request.getfixturevalue(data)
-        metadata = MetaGen(
-            data=df,
-        ).compute_metadata()
+        metagen = MetaGen(data=df)
+        metadata = metagen.compute_metadata()
 
-        assert set(metadata.index) == set(df.columns)
+        assert set(metadata.index) == set(metagen.columns)
 
     @pytest.mark.parametrize(
         "extension, read_metadata",
@@ -90,7 +89,7 @@ class TestMetaGen:
         if extension == "json":
             outdata.reset_index(names=["Name"], inplace=True)
 
-        assert len(outdata) == len(df.columns)
+        assert len(outdata) == metagen.columns_length
         assert list(
             outdata.columns
         ) == MetaGenMetadataColumn.pymetagen_columns(include_name_column=True)

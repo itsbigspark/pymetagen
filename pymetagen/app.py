@@ -75,9 +75,9 @@ def cli():
     "--loading-mode",
     type=click.Choice(["lazy", "eager"], case_sensitive=False),
     callback=lambda ctx, param, value: value.lower(),
-    default="eager",
+    default="lazy",
     required=False,
-    help="(optional) Whether to use lazy or eager mode. Defaults to eager.",
+    help="(optional) Whether to use lazy or eager mode. Defaults to lazy.",
 )
 @click.option(
     "-xfmt",
@@ -219,7 +219,7 @@ def metadata(
 )
 @click.option(
     "-n",
-    "--number_rows",
+    "--number-rows",
     type=click.INT,
     default=10,
     help="(optional) Maximum number of rows to show. Defaults to 10.",
@@ -293,7 +293,7 @@ def inspect(
     A tool to inspect a data set.
     """
     metagen = MetaGen.from_path(path=input, loading_mode=loading_mode)
-    columns_length = len(metagen.data.columns)
+    columns_length = metagen.columns_length
     metagen.extract_data(
         loading_mode=loading_mode,
         tbl_rows=number_rows,
@@ -356,7 +356,7 @@ def inspect(
 )
 @click.option(
     "-n",
-    "--number_rows",
+    "--number-rows",
     type=click.INT,
     default=10,
     help="(optional) Maximum number of rows to show. Defaults to 10.",
@@ -385,7 +385,7 @@ def inspect(
 )
 @click.option(
     "-xfmt",
-    "--extra_formats",
+    "--extra-formats",
     type=click.STRING,
     required=False,
     default=None,
@@ -395,8 +395,8 @@ def inspect(
     ),
 )
 @click.option(
-    "-ignore_im",
-    "--ignore_inspection_modes",
+    "-ignore-im",
+    "--ignore-inspection-modes",
     type=click.STRING,
     required=False,
     help=(
@@ -488,7 +488,7 @@ def extracts(
     "--loading-mode",
     type=click.Choice(["lazy", "eager"], case_sensitive=False),
     callback=lambda ctx, param, value: value.lower(),
-    default="eager",
+    default="lazy",
     required=False,
     help="(optional) Whether to use lazy or eager mode. Defaults to lazy.",
 )

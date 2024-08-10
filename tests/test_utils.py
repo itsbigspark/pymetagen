@@ -5,6 +5,7 @@ import json
 from collections.abc import Sequence
 from pathlib import Path
 
+import polars as pl
 import pytest
 
 from pymetagen.utils import (
@@ -12,6 +13,7 @@ from pymetagen.utils import (
     CustomEncoder,
     InspectionMode,
     get_nested_path,
+    get_schema_by_polars_version,
     map_inspection_modes,
     map_string_to_list_inspection_modes,
     selectively_update_dict,
@@ -228,3 +230,21 @@ class TestMetaGenUtilsFunctions:
         }
         updated_dict = selectively_update_dict(dict1, dict2)
         assert updated_dict == expected_dict
+
+    @pytest.mark.parametrize(
+        ["polars_version"],
+        [
+            ["0.18.0"],
+            ["0.19.0"],
+            ["1.0.0"],
+        ],
+    )
+    def test_get_schema_by_polars_version(
+        self, df_eager: pl.DataFrame, polars_version: str
+    ):
+        schema = get_schema_by_polars_version(
+            df=df_eager, polars_version=polars_version
+        )
+        assert schema.polars_version == polars_version
+        assert schema.columns == ["a", "b", "c"]
+        assert schema.dtypes == [pl.Int64, pl.Int64, pl.Int64]
