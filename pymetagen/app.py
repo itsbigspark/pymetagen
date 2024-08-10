@@ -72,7 +72,7 @@ def cli():
 )
 @click.option(
     "-m",
-    "--mode",
+    "--loading-mode",
     type=click.Choice(["lazy", "eager"], case_sensitive=False),
     callback=lambda ctx, param, value: value.lower(),
     default="eager",
@@ -124,7 +124,7 @@ def metadata(
     input: Path,
     output: Path | None,
     descriptions: Path | None,
-    mode: MetaGenSupportedLoadingMode,
+    loading_mode: MetaGenSupportedLoadingMode,
     extra_formats: str | None,
     show_descriptions: bool,
     preview: bool,
@@ -137,7 +137,7 @@ def metadata(
     metagen = MetaGen.from_path(
         path=input,
         descriptions_path=descriptions,
-        mode=mode,
+        loading_mode=loading_mode,
         compute_metadata=True,
     )
     metadata_by_output_format = metagen.metadata_by_output_format()
@@ -210,7 +210,7 @@ def metadata(
 )
 @click.option(
     "-m",
-    "--mode",
+    "--loading-mode",
     type=click.Choice(["lazy", "eager"], case_sensitive=False),
     callback=lambda ctx, param, value: value.lower(),
     default="lazy",
@@ -281,7 +281,7 @@ def metadata(
 def inspect(
     input: Path,
     output: Path | None,
-    mode: MetaGenSupportedLoadingMode,
+    loading_mode: MetaGenSupportedLoadingMode,
     number_rows: int,
     preview: bool,
     fmt_str_lengths: int,
@@ -292,10 +292,10 @@ def inspect(
     """
     A tool to inspect a data set.
     """
-    metagen = MetaGen.from_path(path=input, mode=mode)
+    metagen = MetaGen.from_path(path=input, loading_mode=loading_mode)
     columns_length = len(metagen.data.columns)
     metagen.extract_data(
-        mode=mode,
+        loading_mode=loading_mode,
         tbl_rows=number_rows,
         inspection_mode=inspection_mode,
         random_seed=random_seed,
@@ -347,7 +347,7 @@ def inspect(
 )
 @click.option(
     "-m",
-    "--mode",
+    "--loading-mode",
     type=click.Choice(["lazy", "eager"], case_sensitive=False),
     callback=lambda ctx, param, value: value.lower(),
     default="lazy",
@@ -407,7 +407,7 @@ def inspect(
 def extracts(
     input: Path,
     output: Path,
-    mode: MetaGenSupportedLoadingMode,
+    loading_mode: MetaGenSupportedLoadingMode,
     number_rows: int,
     random_seed: int,
     with_replacement: bool,
@@ -418,7 +418,7 @@ def extracts(
     A tool to extract n number of rows from a data set. It can extract
     head, tail, random sample at the same time.
     """
-    metagen = MetaGen.from_path(path=input, mode=mode)
+    metagen = MetaGen.from_path(path=input, loading_mode=loading_mode)
     inspection_modes = map_string_to_list_inspection_modes(
         ignore_inspection_modes
     )
@@ -441,7 +441,7 @@ def extracts(
         with_replacement=with_replacement,
         inspection_modes=inspection_modes,
         formats_to_write=formats_to_write,
-        mode=MetaGenSupportedLoadingMode(mode),
+        loading_mode=MetaGenSupportedLoadingMode(loading_mode),
     )
 
 
@@ -485,7 +485,7 @@ def extracts(
 )
 @click.option(
     "-m",
-    "--mode",
+    "--loading-mode",
     type=click.Choice(["lazy", "eager"], case_sensitive=False),
     callback=lambda ctx, param, value: value.lower(),
     default="eager",
@@ -515,14 +515,14 @@ def filter(
     table_name: str | None,
     output: Path | None,
     query: str | Path,
-    mode: MetaGenSupportedLoadingMode,
+    loading_mode: MetaGenSupportedLoadingMode,
     eager: bool,
     preview: bool,
 ) -> None:
     """
     A tool to filter a data set.
     """
-    metagen = MetaGen.from_path(path=input, mode=mode)
+    metagen = MetaGen.from_path(path=input, loading_mode=loading_mode)
     table_name = table_name or input.stem
     metagen.filter_data(table_name, query, eager=eager)
     if output:

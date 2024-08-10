@@ -74,8 +74,8 @@ class MetaGen:
     @classmethod
     def from_path(
         cls,
-        path: Path,
-        mode: MetaGenSupportedLoadingMode = MetaGenSupportedLoadingMode.LAZY,
+        path: Path | str,
+        loading_mode: MetaGenSupportedLoadingMode = MetaGenSupportedLoadingMode.LAZY,
         descriptions_path: Path | None = None,
         compute_metadata: bool = False,
     ) -> MetaGen:
@@ -107,7 +107,7 @@ class MetaGen:
                     column_1,A description of the column,A long name for the column
                     column_2,A description of the column,A long name for the column
 
-            mode: Loading mode to use. See :class:`pymetagen.datatypes.MetaGenSupportedLoadingModes` for supported
+            loadin_mode: Loading mode to use. See :class:`pymetagen.datatypes.MetaGenSupportedLoadingModes` for supported
                 modes.
             compute_metadata: Flag for computing metadata on instantiation.
         """
@@ -116,10 +116,10 @@ class MetaGen:
             MetaGenSupportedLoadingMode.EAGER: DataLoader,
         }
         try:
-            loader_class = mode_mapping[mode]
+            loader_class = mode_mapping[loading_mode]
         except KeyError:
             raise LoadingModeUnsupportedError(
-                f"Mode {mode} is not supported. Supported modes are: "
+                f"Mode {loading_mode} is not supported. Supported modes are: "
                 f"{MetaGenSupportedLoadingMode.values()}"
             )
         data = loader_class(path)()
@@ -545,7 +545,7 @@ class MetaGen:
         with_replacement: bool = False,
         inspection_modes: Sequence[InspectionMode] | None = None,
         formats_to_write: set[MetaGenSupportedFileExtension] | None = None,
-        mode: MetaGenSupportedLoadingMode = MetaGenSupportedLoadingMode.LAZY,
+        loading_mode: MetaGenSupportedLoadingMode = MetaGenSupportedLoadingMode.LAZY,
     ) -> None:
 
         inspection_modes = inspection_modes or InspectionMode.list()
@@ -560,7 +560,7 @@ class MetaGen:
                 )
                 self.write_extract_by_inspection_mode(
                     output_path=path,
-                    mode=mode,
+                    loading_mode=loading_mode,
                     inspection_mode=inspection_mode,
                     random_seed=random_seed,
                     number_rows=number_rows,
@@ -570,14 +570,14 @@ class MetaGen:
     def write_extract_by_inspection_mode(
         self,
         output_path: Path,
-        mode: MetaGenSupportedLoadingMode,
+        loading_mode: MetaGenSupportedLoadingMode,
         inspection_mode: InspectionMode,
         random_seed: int | None,
         number_rows: int,
         with_replacement: bool,
     ) -> None:
         data = self.extract_data(
-            mode=mode,
+            loading_mode=loading_mode,
             tbl_rows=number_rows,
             inspection_mode=inspection_mode,
             random_seed=random_seed,
@@ -611,7 +611,7 @@ class MetaGen:
 
     def extract_data(
         self,
-        mode: MetaGenSupportedLoadingMode,
+        loading_mode: MetaGenSupportedLoadingMode,
         inspection_mode: InspectionMode,
         tbl_rows: int = 10,
         random_seed: int | None = None,
@@ -623,7 +623,7 @@ class MetaGen:
         """
         data = extract_data(
             df=self.data,
-            mode=mode,
+            loading_mode=loading_mode,
             tbl_rows=tbl_rows,
             inspection_mode=inspection_mode,
             random_seed=random_seed,
