@@ -42,6 +42,7 @@ from pymetagen.utils import (
     InspectionMode,
     collect,
     extract_data,
+    get_schema_by_polars_version,
 )
 
 
@@ -67,6 +68,9 @@ class MetaGen:
         compute_metadata: bool = False,
     ):
         self.data = data
+        self.schema = get_schema_by_polars_version(self.data)
+        self.columns = self.schema.columns
+        self.columns_length = self.schema.length
         self.descriptions = descriptions or {}
         if compute_metadata:
             self.pandas_metadata = self._metadata
@@ -185,8 +189,8 @@ class MetaGen:
         )
 
         metadata: dict[Hashable, dict[Hashable, Any]] = {}
-        schema = self.data.columns
-        length_of_columns = len(schema)
+        columns = self.columns
+        length_of_columns = self.columns_length
 
         simple_metadata = self._get_simple_metadata(
             columns_to_drop=columns_to_drop
@@ -251,10 +255,10 @@ class MetaGen:
 
         metadata[MetaGenMetadataColumn.DESCRIPTION] = {}
         metadata[MetaGenMetadataColumn.LONG_NAME] = {}
-        for column in schema:
+        for column in columns:
             description_data: dict[str, Any] = self.descriptions.get(
                 column, {}
-            )
+            )  # type: ignore
             metadata[MetaGenMetadataColumn.DESCRIPTION][column] = (
                 description_data.get("description", "")
             )
@@ -319,7 +323,7 @@ class MetaGen:
         )
 
         types_: dict[Hashable, str] = {}
-        for col, type_ in zip(self.data.columns, self.data.dtypes):
+        for col, type_ in zip(self.columns, self.data.dtypes):
             types_[col] = dtype_to_metagen_type(type_)
         metadata_table[MetaGenMetadataColumn.TYPE] = types_
 
@@ -329,7 +333,7 @@ class MetaGen:
         self, types: dict[Hashable, MetaGenDataType]
     ) -> dict[Hashable, int]:
         nulls: dict[Hashable, int] = {}
-        for col in self.data.columns:
+        for col in self.columns:
             data = self.data.pipe(collect).select(col)
             null_count = data.null_count().row(0)[0]
             zero_count = (
@@ -344,7 +348,7 @@ class MetaGen:
         self, types: dict[Hashable, MetaGenDataType]
     ) -> dict[Hashable, int | None]:
         pos: dict[Hashable, int | None] = {}
-        for col in self.data.columns:
+        for col in self.columns:
             pos_count = (
                 self.data.filter(pl.col(col) > 0).pipe(collect).shape[0]
                 if types[col] in MetaGenDataType.numeric_data_types()
@@ -357,7 +361,7 @@ class MetaGen:
         self, types: dict[Hashable, MetaGenDataType]
     ) -> dict[Hashable, int | None]:
         neg: dict[Hashable, int | None] = {}
-        for col in self.data.columns:
+        for col in self.columns:
             neg_count = (
                 self.data.filter(pl.col(col) < 0).pipe(collect).shape[0]
                 if types[col] in MetaGenDataType.numeric_data_types()
@@ -370,7 +374,7 @@ class MetaGen:
         self, types: dict[Hashable, MetaGenDataType]
     ) -> dict[Hashable, int | None]:
         min_str_length: dict[Hashable, int | None] = {}
-        for col in self.data.columns:
+        for col in self.columns:
             if types[col] in MetaGenDataType.categorical_data_types():
                 min_str_length[col] = (
                     self.data.with_columns(
@@ -392,7 +396,7 @@ class MetaGen:
         self, types: dict[Hashable, MetaGenDataType]
     ) -> dict[Hashable, int | None]:
         max_str_length: dict[Hashable, int | None] = {}
-        for col in self.data.columns:
+        for col in self.columns:
             if types[col] in MetaGenDataType.categorical_data_types():
                 max_str_length[col] = (
                     self.data.with_columns(
@@ -419,7 +423,7 @@ class MetaGen:
 
     def _number_of_unique_counts(self) -> dict[Hashable, int]:
         unique_counts: dict[Hashable, int] = {}
-        for col in self.data.columns:
+        for col in self.columns:
             if not self._is_column_all_null(col):
                 unique_counts[col] = (
                     self.data.select(col).pipe(collect).n_unique()
@@ -433,7 +437,7 @@ class MetaGen:
         self, max_number_of_unique_to_show: int = 10
     ) -> dict[Hashable, list[Any] | list[None] | None]:
         unique_values: dict[Hashable, list[Any] | list[None] | None] = {}
-        for col in self.data.columns:
+        for col in self.columns:
             if not self._is_column_all_null(col):
                 values = (
                     self.data.select(col).pipe(collect).unique()[col].to_list()

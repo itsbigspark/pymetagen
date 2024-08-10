@@ -3,9 +3,12 @@ from __future__ import annotations
 import datetime
 import json
 import os
+import re
 from collections.abc import Sequence
 from copy import deepcopy
+from dataclasses import dataclass
 from enum import Enum
+from functools import cached_property
 from glob import glob
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -13,7 +16,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import polars as pl
 
-from pymetagen._typing import DataFrameT
+from pymetagen._typing import DataFrameT, PolarsDataType
 
 if TYPE_CHECKING:
     from typing import Self
@@ -308,3 +311,42 @@ def map_string_to_list_inspection_modes(
     return map_inspection_modes(
         inspection_modes=list_of_ignored_inspection_modes
     )
+
+
+@dataclass
+class PolarsSchema:
+    schema: dict[str, PolarsDataType]
+
+    @cached_property
+    def columns(self) -> list[str]:
+        return list(self.schema.keys())
+
+    @cached_property
+    def dtypes(self) -> list[PolarsDataType]:
+        return list(self.schema.values())
+
+    @cached_property
+    def length(self) -> int:
+        return len(self.columns)
+
+
+def get_schema_by_polars_version(df: DataFrameT) -> PolarsSchema:
+    """
+    Get schema by polars version.
+
+    Args:
+        df: DataFrame or LazyFrame
+
+    Returns:
+        PolarsSchema
+    """
+    polars_version = pl.__version__
+    if re.match(r"0\.(18|19|20)\.(\d+)", polars_version) or isinstance(
+        df, pl.DataFrame
+    ):
+        schema: dict[str, PolarsDataType] = dict(zip(df.columns, df.dtypes))
+        return PolarsSchema(schema=schema)
+    elif re.match(r"1\.(\d+)\.(\d+)", polars_version):
+        return PolarsSchema(schema=df.schema)  # type: ignore
+    else:
+        raise ValueError(f"Polars version {polars_version} is not supported.")
