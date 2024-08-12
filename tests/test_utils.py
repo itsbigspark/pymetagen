@@ -8,12 +8,13 @@ from pathlib import Path
 import polars as pl
 import pytest
 
+from pymetagen._typing import DataFrameT
 from pymetagen.utils import (
     CustomDecoder,
     CustomEncoder,
     InspectionMode,
+    get_data_schema,
     get_nested_path,
-    get_schema_by_polars_version,
     map_inspection_modes,
     map_string_to_list_inspection_modes,
     selectively_update_dict,
@@ -232,19 +233,29 @@ class TestMetaGenUtilsFunctions:
         assert updated_dict == expected_dict
 
     @pytest.mark.parametrize(
-        ["polars_version"],
+        ["df"],
         [
-            ["0.18.0"],
-            ["0.19.0"],
-            ["1.0.0"],
+            (
+                pl.LazyFrame(
+                    {
+                        "a": [1, 2, 3],
+                        "b": [4, 5, 6],
+                        "c": [7, 8, 9],
+                    }
+                ),
+            ),
+            (
+                pl.LazyFrame(
+                    {
+                        "a": [1, 2, 3],
+                        "b": [4, 5, 6],
+                        "c": [7, 8, 9],
+                    }
+                ),
+            ),
         ],
     )
-    def test_get_schema_by_polars_version(
-        self, df_eager: pl.DataFrame, polars_version: str
-    ):
-        schema = get_schema_by_polars_version(
-            df=df_eager, polars_version=polars_version
-        )
-        assert schema.polars_version == polars_version
+    def test_get_data_schema(self, df: DataFrameT):
+        schema = get_data_schema(df=df)
         assert schema.columns == ["a", "b", "c"]
         assert schema.dtypes == [pl.Int64, pl.Int64, pl.Int64]

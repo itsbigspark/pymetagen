@@ -42,7 +42,7 @@ from pymetagen.utils import (
     InspectionMode,
     collect,
     extract_data,
-    get_schema_by_polars_version,
+    get_data_schema,
 )
 
 
@@ -68,9 +68,9 @@ class MetaGen:
         compute_metadata: bool = False,
     ):
         self.data = data
-        self.schema = get_schema_by_polars_version(self.data)
-        self.columns = self.schema.columns
-        self.columns_length = self.schema.length
+        self.data_schema = get_data_schema(self.data)
+        self.columns = self.data_schema.columns
+        self.columns_length = self.data_schema.length
         self.descriptions = descriptions or {}
         if compute_metadata:
             self.pandas_metadata = self._metadata
@@ -323,7 +323,7 @@ class MetaGen:
         )
 
         types_: dict[Hashable, str] = {}
-        for col, type_ in zip(self.columns, self.data.dtypes):
+        for col, type_ in self.data_schema.schema.items():
             types_[col] = dtype_to_metagen_type(type_)
         metadata_table[MetaGenMetadataColumn.TYPE] = types_
 
