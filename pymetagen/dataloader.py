@@ -207,8 +207,9 @@ class LazyDataLoader(DataLoader):
 
     def _load_parquet_data(self) -> pl.LazyFrame:
         pl.enable_string_cache()
+        path = get_nested_path(self.path)
         return pl.scan_parquet(
-            source=self.path,
+            source=path,
             hive_partitioning=True,
             **self.polars_read_parquet_options,
         )
