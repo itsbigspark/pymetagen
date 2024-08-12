@@ -898,4 +898,4 @@ xlsx = ["xlsxwriter"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9"
-content-hash = "286a81ae6040039f9bc3601d7455014cc5457587060784d391d10d6a4027a5ed"
+content-hash = "423a02827416b1287d896331f5a8c264973a94a1958c7b2f3695327d52ef89ba"

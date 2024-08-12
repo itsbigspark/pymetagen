@@ -3,7 +3,6 @@ from __future__ import annotations
 import datetime
 import json
 import os
-import re
 from collections.abc import Sequence
 from copy import deepcopy
 from dataclasses import dataclass
@@ -314,9 +313,8 @@ def map_string_to_list_inspection_modes(
 
 
 @dataclass
-class PolarsSchema:
+class DataSchema:
     schema: dict[str, PolarsDataType]
-    polars_version: str | None = None
 
     @cached_property
     def columns(self) -> list[str]:
@@ -331,26 +329,18 @@ class PolarsSchema:
         return len(self.columns)
 
 
-def get_schema_by_polars_version(
-    df: DataFrameT, polars_version: str | None = None
-) -> PolarsSchema:
+def get_data_schema(df: DataFrameT) -> DataSchema:
     """
-    Get schema by polars version.
+    Get data schema from a DataFrame or LazyFrame.
 
     Args:
         df: DataFrame or LazyFrame
-        polars_version: optional polars version used for testing
 
     Returns:
         PolarsSchema
     """
-    polars_version = polars_version or pl.__version__
-    if re.match(r"0\.(18|19|20)\.(\d+)", polars_version) or isinstance(
-        df, pl.DataFrame
-    ):
+    if isinstance(df, pl.DataFrame):
         schema: dict[str, PolarsDataType] = dict(zip(df.columns, df.dtypes))
-        return PolarsSchema(schema=schema, polars_version=polars_version)
-    elif re.match(r"1\.(\d+)\.(\d+)", polars_version):
-        return PolarsSchema(schema=df.schema, polars_version=polars_version)  # type: ignore
     else:
-        raise ValueError(f"Polars version {polars_version} is not supported.")
+        schema = df.collect_schema()  # type: ignore
+    return DataSchema(schema=schema)

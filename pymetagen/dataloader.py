@@ -22,7 +22,7 @@ POLARS_DEFAULT_READ_CSV_OPTIONS: dict[str, Any] = {
     "use_pyarrow": False,
     "n_rows": None,
     "row_count_name": None,
-    "row_count_offset": 0,
+    "row_index_offset": 0,
     "low_memory": False,
     "rechunk": True,
     "has_header": True,
@@ -31,7 +31,7 @@ POLARS_DEFAULT_READ_CSV_OPTIONS: dict[str, Any] = {
     "comment_prefix": None,
     "quote_char": r'"',
     "skip_rows": 0,
-    "dtypes": None,
+    "schema_overrides": None,
     "null_values": None,
     "missing_utf8_is_empty_string": False,
     "ignore_errors": False,
@@ -201,5 +201,8 @@ class LazyDataLoader(DataLoader):
 
     def _load_parquet_data(self) -> pl.LazyFrame:
         pl.enable_string_cache()
-        path = get_nested_path(self.path)
-        return pl.scan_parquet(source=path, **self.polars_read_parquet_options)
+        return pl.scan_parquet(
+            source=self.path,
+            hive_partitioning=True,
+            **self.polars_read_parquet_options,
+        )
