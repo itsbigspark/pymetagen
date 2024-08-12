@@ -21,7 +21,7 @@ POLARS_DEFAULT_READ_CSV_OPTIONS: dict[str, Any] = {
     "columns": None,
     "use_pyarrow": False,
     "n_rows": None,
-    "row_count_name": None,
+    "row_index_name": None,
     "row_index_offset": 0,
     "low_memory": False,
     "rechunk": True,
@@ -92,7 +92,9 @@ class DataLoader:
         self.path = Path(path)
         self.polars_read_csv_options = _default_read_csv_options.copy()
         self._update_read_csv_polars_options(polars_read_csv_options)
-        self.polars_read_excel_options = _default_read_excel_options.copy()
+        self.polars_read_excel_options: dict[str, Any] = (
+            _default_read_excel_options.copy()
+        )
         self._update_polars_read_excel_options(sheet_name)
         self.polars_read_parquet_options = _default_read_parquet_options.copy()
 
@@ -150,7 +152,11 @@ class DataLoader:
         """
         pl.enable_string_cache()
         path = get_nested_path(self.path)
-        return pl.read_parquet(source=path, **self.polars_read_parquet_options)
+        return pl.read_parquet(
+            source=path,
+            hive_partitioning=True,
+            **self.polars_read_parquet_options,
+        )
 
     def _load_json_data(self):
         raise NotImplementedError
