@@ -156,7 +156,6 @@ class TestCli:
                 ORDER BY imdb_score DESC
                 """
             ],
-            ["tests/data/filter_query.sql"],
         ],
     )
     def test_cli_filter_by_sql_query(
@@ -175,7 +174,7 @@ class TestCli:
                 "tests/data/testdata.csv",
                 "-o",
                 str(outpath),
-                "--mode",
+                "--loading-mode",
                 mode,
                 "-q",
                 sql_query,

@@ -5,12 +5,15 @@ import json
 from collections.abc import Sequence
 from pathlib import Path
 
+import polars as pl
 import pytest
 
+from pymetagen._typing import DataFrameT
 from pymetagen.utils import (
     CustomDecoder,
     CustomEncoder,
     InspectionMode,
+    get_data_schema,
     get_nested_path,
     map_inspection_modes,
     map_string_to_list_inspection_modes,
@@ -228,3 +231,31 @@ class TestMetaGenUtilsFunctions:
         }
         updated_dict = selectively_update_dict(dict1, dict2)
         assert updated_dict == expected_dict
+
+    @pytest.mark.parametrize(
+        ["df"],
+        [
+            (
+                pl.LazyFrame(
+                    {
+                        "a": [1, 2, 3],
+                        "b": [4, 5, 6],
+                        "c": [7, 8, 9],
+                    }
+                ),
+            ),
+            (
+                pl.LazyFrame(
+                    {
+                        "a": [1, 2, 3],
+                        "b": [4, 5, 6],
+                        "c": [7, 8, 9],
+                    }
+                ),
+            ),
+        ],
+    )
+    def test_get_data_schema(self, df: DataFrameT):
+        schema = get_data_schema(df=df)
+        assert schema.columns == ["a", "b", "c"]
+        assert schema.dtypes == [pl.Int64, pl.Int64, pl.Int64]

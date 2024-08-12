@@ -5,7 +5,9 @@ import json
 import os
 from collections.abc import Sequence
 from copy import deepcopy
+from dataclasses import dataclass
 from enum import Enum
+from functools import cached_property
 from glob import glob
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -13,7 +15,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import polars as pl
 
-from pymetagen._typing import DataFrameT
+from pymetagen._typing import DataFrameT, PolarsDataType
 
 if TYPE_CHECKING:
     from typing import Self
@@ -133,13 +135,13 @@ def get_nested_path(
 
 def sample(
     df: DataFrameT,
-    mode: MetaGenSupportedLoadingMode,
+    loading_mode: MetaGenSupportedLoadingMode,
     tbl_rows: int = 10,
     random_seed: int | None = None,
     with_replacement: bool = False,
 ) -> DataFrameT:
 
-    if mode == "eager":
+    if loading_mode == "eager":
         assert isinstance(df, pl.DataFrame)
         row_depth = df.height
         return df.sample(
@@ -147,7 +149,7 @@ def sample(
             with_replacement=with_replacement,
             seed=random_seed,
         )
-    elif mode == "lazy":
+    elif loading_mode == "lazy":
         assert isinstance(df, pl.LazyFrame)
         random_generator = np.random.default_rng(random_seed)
         row_depth = int(df.select(pl.first()).select(pl.len()).collect()[0, 0])
@@ -174,7 +176,7 @@ def sample(
 
 def extract_data(
     df: DataFrameT,
-    mode: MetaGenSupportedLoadingMode,
+    loading_mode: MetaGenSupportedLoadingMode,
     tbl_rows: int = 10,
     inspection_mode: InspectionMode = InspectionMode.head,
     random_seed: int | None = None,
@@ -182,13 +184,26 @@ def extract_data(
 ) -> pl.DataFrame:
     """
     Extract a data.
+
+    Args:
+        df: DataFrame
+        loading_mode: loading mode
+        tbl_rows: number of rows to extract
+        inspection_mode: inspection mode
+        random_seed: random seed
+        with_replacement: with replacement
+
+    Returns:
+        DataFrame with extracted data
     """
     if inspection_mode not in InspectionMode.list():
         raise NotImplementedError(
             f"inspection_mode must be one of {InspectionMode.list()}"
         )
     if inspection_mode == InspectionMode.sample:
-        df = df.pipe(sample, mode, tbl_rows, random_seed, with_replacement)
+        df = df.pipe(
+            sample, loading_mode, tbl_rows, random_seed, with_replacement
+        )
     elif inspection_mode == InspectionMode.tail:
         df = df.tail(tbl_rows)
     elif inspection_mode == InspectionMode.head:
@@ -295,3 +310,37 @@ def map_string_to_list_inspection_modes(
     return map_inspection_modes(
         inspection_modes=list_of_ignored_inspection_modes
     )
+
+
+@dataclass
+class DataSchema:
+    schema: dict[str, PolarsDataType]
+
+    @cached_property
+    def columns(self) -> list[str]:
+        return list(self.schema.keys())
+
+    @cached_property
+    def dtypes(self) -> list[PolarsDataType]:
+        return list(self.schema.values())
+
+    @cached_property
+    def length(self) -> int:
+        return len(self.columns)
+
+
+def get_data_schema(df: DataFrameT) -> DataSchema:
+    """
+    Get data schema from a DataFrame or LazyFrame.
+
+    Args:
+        df: DataFrame or LazyFrame
+
+    Returns:
+        PolarsSchema
+    """
+    if isinstance(df, pl.DataFrame):
+        schema: dict[str, PolarsDataType] = dict(zip(df.columns, df.dtypes))
+    else:
+        schema = df.collect_schema()  # type: ignore
+    return DataSchema(schema=schema)

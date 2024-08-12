@@ -21,8 +21,8 @@ POLARS_DEFAULT_READ_CSV_OPTIONS: dict[str, Any] = {
     "columns": None,
     "use_pyarrow": False,
     "n_rows": None,
-    "row_count_name": None,
-    "row_count_offset": 0,
+    "row_index_name": None,
+    "row_index_offset": 0,
     "low_memory": False,
     "rechunk": True,
     "has_header": True,
@@ -31,7 +31,7 @@ POLARS_DEFAULT_READ_CSV_OPTIONS: dict[str, Any] = {
     "comment_prefix": None,
     "quote_char": r'"',
     "skip_rows": 0,
-    "dtypes": None,
+    "schema_overrides": None,
     "null_values": None,
     "missing_utf8_is_empty_string": False,
     "ignore_errors": False,
@@ -76,7 +76,7 @@ POLARS_DEFAULT_READ_PARQUET_OPTIONS: dict[str, Any] = {}
 class DataLoader:
     def __init__(
         self,
-        path: Path,
+        path: Path | str,
         polars_read_csv_options: None | dict[str, Any] = None,
         sheet_name: str | None = None,
         _default_read_csv_options: dict[
@@ -89,10 +89,12 @@ class DataLoader:
             str, Any
         ] = POLARS_DEFAULT_READ_PARQUET_OPTIONS,
     ):
-        self.path = path
+        self.path = Path(path)
         self.polars_read_csv_options = _default_read_csv_options.copy()
         self._update_read_csv_polars_options(polars_read_csv_options)
-        self.polars_read_excel_options = _default_read_excel_options.copy()
+        self.polars_read_excel_options: dict[str, Any] = (
+            _default_read_excel_options.copy()
+        )
         self._update_polars_read_excel_options(sheet_name)
         self.polars_read_parquet_options = _default_read_parquet_options.copy()
 
@@ -110,9 +112,7 @@ class DataLoader:
             MetaGenSupportedFileExtension.NONE: self._load_none_suffix,
         }
         try:
-            file_extension = MetaGenSupportedFileExtension(
-                Path(self.path).suffix
-            )
+            file_extension = MetaGenSupportedFileExtension(self.path.suffix)
         except ValueError:
             raise FileTypeUnsupportedError(
                 f"File extension for {self.path} is not supported"
@@ -152,7 +152,11 @@ class DataLoader:
         """
         pl.enable_string_cache()
         path = get_nested_path(self.path)
-        return pl.read_parquet(source=path, **self.polars_read_parquet_options)
+        return pl.read_parquet(
+            source=path,
+            hive_partitioning=True,
+            **self.polars_read_parquet_options,
+        )
 
     def _load_json_data(self):
         raise NotImplementedError
@@ -177,7 +181,7 @@ class DataLoader:
 class LazyDataLoader(DataLoader):
     def __init__(
         self,
-        path: Path,
+        path: Path | str,
         polars_read_csv_options: None | dict[str, Any] = None,
         sheet_name: str | None = None,
     ):
@@ -204,4 +208,8 @@ class LazyDataLoader(DataLoader):
     def _load_parquet_data(self) -> pl.LazyFrame:
         pl.enable_string_cache()
         path = get_nested_path(self.path)
-        return pl.scan_parquet(source=path, **self.polars_read_parquet_options)
+        return pl.scan_parquet(
+            source=path,
+            hive_partitioning=True,
+            **self.polars_read_parquet_options,
+        )

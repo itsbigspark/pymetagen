@@ -13,3 +13,6 @@ General changes:
 Development changes:
 
 - Adds new method in `MetaGen` class to write extracts to a file.
+- Uses `Enum` class to define the metadata colum names.
+- Now we can view the metadata table without the need to parse an output path to write or `-P` flag.
+- Adds a polars version compatibility function to get the schema.

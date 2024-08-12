@@ -62,3 +62,14 @@ def columns_with_nulls() -> dict[str, list[Any]]:
         "no_nulls": [1, 2, 3, 4, 5],
         "mixed": [1, 2, 3, None, None],
     }
+
+
+@pytest.fixture
+def df_eager() -> pl.DataFrame:
+    return pl.DataFrame(
+        {
+            "a": [1, 2, 3, 4, 5],
+            "b": [1, 2, 3, 4, 5],
+            "c": [1, 2, 3, 4, 5],
+        }
+    )

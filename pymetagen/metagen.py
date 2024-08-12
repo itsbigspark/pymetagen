@@ -27,6 +27,7 @@ from pymetagen._typing import (
 from pymetagen.dataloader import DataLoader, LazyDataLoader
 from pymetagen.datatypes import (
     MetaGenDataType,
+    MetaGenMetadataColumn,
     MetaGenSupportedFileExtension,
     MetaGenSupportedLoadingMode,
     dtype_to_metagen_type,
@@ -41,6 +42,7 @@ from pymetagen.utils import (
     InspectionMode,
     collect,
     extract_data,
+    get_data_schema,
 )
 
 
@@ -66,6 +68,9 @@ class MetaGen:
         compute_metadata: bool = False,
     ):
         self.data = data
+        self.data_schema = get_data_schema(self.data)
+        self.columns = self.data_schema.columns
+        self.columns_length = self.data_schema.length
         self.descriptions = descriptions or {}
         if compute_metadata:
             self.pandas_metadata = self._metadata
@@ -73,8 +78,8 @@ class MetaGen:
     @classmethod
     def from_path(
         cls,
-        path: Path,
-        mode: MetaGenSupportedLoadingMode = MetaGenSupportedLoadingMode.LAZY,
+        path: Path | str,
+        loading_mode: MetaGenSupportedLoadingMode = MetaGenSupportedLoadingMode.LAZY,
         descriptions_path: Path | None = None,
         compute_metadata: bool = False,
     ) -> MetaGen:
@@ -106,7 +111,7 @@ class MetaGen:
                     column_1,A description of the column,A long name for the column
                     column_2,A description of the column,A long name for the column
 
-            mode: Loading mode to use. See :class:`pymetagen.datatypes.MetaGenSupportedLoadingModes` for supported
+            loadin_mode: Loading mode to use. See :class:`pymetagen.datatypes.MetaGenSupportedLoadingModes` for supported
                 modes.
             compute_metadata: Flag for computing metadata on instantiation.
         """
@@ -115,10 +120,10 @@ class MetaGen:
             MetaGenSupportedLoadingMode.EAGER: DataLoader,
         }
         try:
-            loader_class = mode_mapping[mode]
+            loader_class = mode_mapping[loading_mode]
         except KeyError:
             raise LoadingModeUnsupportedError(
-                f"Mode {mode} is not supported. Supported modes are: "
+                f"Mode {loading_mode} is not supported. Supported modes are: "
                 f"{MetaGenSupportedLoadingMode.values()}"
             )
         data = loader_class(path)()
@@ -149,7 +154,11 @@ class MetaGen:
 
     @property
     def _polars_metadata(self):
-        return pl.from_pandas(self._metadata)
+        return pl.DataFrame(
+            data=self._metadata.to_dict("list"),
+            strict=False,
+            schema_overrides=MetaGenMetadataColumn.interger_dtypes(),
+        )
 
     @staticmethod
     def _load_descriptions_from_json(
@@ -172,22 +181,7 @@ class MetaGen:
             "50%",
             "75%",
         ]
-        pymetagen_columns = [
-            "Long Name",
-            "Type",
-            "Description",
-            "Min",
-            "Max",
-            "Min Length",
-            "Max Length",
-            "# nulls",
-            "# empty/zero",
-            "# positive",
-            "# negative",
-            "# unique",
-            "Values",
-        ]
-
+        pymetagen_columns = MetaGenMetadataColumn.pymetagen_columns()
         assert_msg = (
             "Internal error: while calculating '{}' metadata."
             " Number of columns in metadata table does not match number of"
@@ -195,8 +189,8 @@ class MetaGen:
         )
 
         metadata: dict[Hashable, dict[Hashable, Any]] = {}
-        schema = self.data.columns
-        length_of_columns = len(schema)
+        columns = self.columns
+        length_of_columns = self.columns_length
 
         simple_metadata = self._get_simple_metadata(
             columns_to_drop=columns_to_drop
@@ -206,69 +200,79 @@ class MetaGen:
         metadata.update(simple_metadata)
 
         number_of_null_and_zeros = self._number_of_null_and_zeros(
-            metadata["Type"]
+            metadata[MetaGenMetadataColumn.TYPE]
         )
         assert (
             len(number_of_null_and_zeros) == length_of_columns
         ), assert_msg.format("null and zeros")
-        metadata["# empty/zero"] = number_of_null_and_zeros
+        metadata[MetaGenMetadataColumn.NUMBER_EMPTY_ZERO] = (
+            number_of_null_and_zeros
+        )
 
         number_of_positive_values = self._number_of_positive_values(
-            metadata["Type"]
+            metadata[MetaGenMetadataColumn.TYPE]
         )
         assert (
             len(number_of_positive_values) == length_of_columns
         ), assert_msg.format("positive values")
-        metadata["# positive"] = number_of_positive_values
+        metadata[MetaGenMetadataColumn.NUMBER_POSITIVE] = (
+            number_of_positive_values
+        )
 
         number_of_negative_values = self._number_of_negative_values(
-            metadata["Type"]
+            metadata[MetaGenMetadataColumn.TYPE]
         )
         assert (
             len(number_of_negative_values) == length_of_columns
         ), assert_msg.format("negative values")
-        metadata["# negative"] = number_of_negative_values
+        metadata[MetaGenMetadataColumn.NUMBER_NEGATIVE] = (
+            number_of_negative_values
+        )
 
         minimal_string_length = self._minimal_string_length(metadata["Type"])
         assert (
             len(minimal_string_length) == length_of_columns
         ), assert_msg.format("minimal string length")
-        metadata["Min Length"] = minimal_string_length
+        metadata[MetaGenMetadataColumn.MIN_LENGTH] = minimal_string_length
 
         maximal_string_length = self._maximal_string_length(metadata["Type"])
         assert (
             len(maximal_string_length) == length_of_columns
         ), assert_msg.format("maximal string length")
-        metadata["Max Length"] = maximal_string_length
+        metadata[MetaGenMetadataColumn.MAX_LENGTH] = maximal_string_length
 
         number_of_unique_counts = self._number_of_unique_counts()
         assert (
             len(number_of_unique_counts) == length_of_columns
         ), assert_msg.format("number of unique counts")
-        metadata["# unique"] = number_of_unique_counts
+        metadata[MetaGenMetadataColumn.NUMBER_UNIQUE] = number_of_unique_counts
 
         number_of_unique_values = self._number_of_unique_values()
         assert (
             len(number_of_unique_values) == length_of_columns
         ), assert_msg.format("number of unique values")
-        metadata["Values"] = number_of_unique_values
+        metadata[MetaGenMetadataColumn.VALUES] = number_of_unique_values
 
-        metadata["Description"] = {}
-        metadata["Long Name"] = {}
-        for column in schema:
+        metadata[MetaGenMetadataColumn.DESCRIPTION] = {}
+        metadata[MetaGenMetadataColumn.LONG_NAME] = {}
+        for column in columns:
             description_data: dict[str, Any] = self.descriptions.get(
                 column, {}
+            )  # type: ignore
+            metadata[MetaGenMetadataColumn.DESCRIPTION][column] = (
+                description_data.get("description", "")
             )
-            metadata["Description"][column] = description_data.get(
-                "description", ""
-            )
-            metadata["Long Name"][column] = description_data.get(
-                "long_name", ""
+            metadata[MetaGenMetadataColumn.LONG_NAME][column] = (
+                description_data.get("long_name", "")
             )
 
-        full_metadata = pd.DataFrame(metadata).replace(np.nan, None)
-        full_metadata.index.name = "Name"
-        return full_metadata[pymetagen_columns]
+        full_metadata = pd.DataFrame(
+            data=metadata,
+        ).replace(np.nan, None)
+        full_metadata.index.name = MetaGenMetadataColumn.NAME.value
+        return full_metadata[pymetagen_columns].rename(
+            columns=MetaGenMetadataColumn.as_dict()
+        )
 
     def metadata_by_output_format(
         self,
@@ -301,21 +305,27 @@ class MetaGen:
             .T.drop(columns=columns_to_drop)
             .rename(
                 columns={
-                    "null_count": "# nulls",
-                    "min": "Min",
-                    "max": "Max",
-                    "mean": "Mean",
-                    "std": "Std",
+                    "null_count": MetaGenMetadataColumn.NUMBER_NULLS,
+                    "min": MetaGenMetadataColumn.MIN,
+                    "max": MetaGenMetadataColumn.MAX,
+                    "mean": MetaGenMetadataColumn.MEAN,
+                    "std": MetaGenMetadataColumn.STD,
                 }
             )
-            .astype({"# nulls": int, "Min": str, "Max": str})
+            .astype(
+                {
+                    MetaGenMetadataColumn.NUMBER_NULLS: int,
+                    MetaGenMetadataColumn.MIN: str,
+                    MetaGenMetadataColumn.MAX: str,
+                }
+            )
             .to_dict()
         )
 
         types_: dict[Hashable, str] = {}
-        for col, type_ in zip(self.data.columns, self.data.dtypes):
+        for col, type_ in self.data_schema.schema.items():
             types_[col] = dtype_to_metagen_type(type_)
-        metadata_table["Type"] = types_
+        metadata_table[MetaGenMetadataColumn.TYPE] = types_
 
         return metadata_table
 
@@ -323,7 +333,7 @@ class MetaGen:
         self, types: dict[Hashable, MetaGenDataType]
     ) -> dict[Hashable, int]:
         nulls: dict[Hashable, int] = {}
-        for col in self.data.columns:
+        for col in self.columns:
             data = self.data.pipe(collect).select(col)
             null_count = data.null_count().row(0)[0]
             zero_count = (
@@ -338,7 +348,7 @@ class MetaGen:
         self, types: dict[Hashable, MetaGenDataType]
     ) -> dict[Hashable, int | None]:
         pos: dict[Hashable, int | None] = {}
-        for col in self.data.columns:
+        for col in self.columns:
             pos_count = (
                 self.data.filter(pl.col(col) > 0).pipe(collect).shape[0]
                 if types[col] in MetaGenDataType.numeric_data_types()
@@ -351,7 +361,7 @@ class MetaGen:
         self, types: dict[Hashable, MetaGenDataType]
     ) -> dict[Hashable, int | None]:
         neg: dict[Hashable, int | None] = {}
-        for col in self.data.columns:
+        for col in self.columns:
             neg_count = (
                 self.data.filter(pl.col(col) < 0).pipe(collect).shape[0]
                 if types[col] in MetaGenDataType.numeric_data_types()
@@ -364,7 +374,7 @@ class MetaGen:
         self, types: dict[Hashable, MetaGenDataType]
     ) -> dict[Hashable, int | None]:
         min_str_length: dict[Hashable, int | None] = {}
-        for col in self.data.columns:
+        for col in self.columns:
             if types[col] in MetaGenDataType.categorical_data_types():
                 min_str_length[col] = (
                     self.data.with_columns(
@@ -386,7 +396,7 @@ class MetaGen:
         self, types: dict[Hashable, MetaGenDataType]
     ) -> dict[Hashable, int | None]:
         max_str_length: dict[Hashable, int | None] = {}
-        for col in self.data.columns:
+        for col in self.columns:
             if types[col] in MetaGenDataType.categorical_data_types():
                 max_str_length[col] = (
                     self.data.with_columns(
@@ -413,7 +423,7 @@ class MetaGen:
 
     def _number_of_unique_counts(self) -> dict[Hashable, int]:
         unique_counts: dict[Hashable, int] = {}
-        for col in self.data.columns:
+        for col in self.columns:
             if not self._is_column_all_null(col):
                 unique_counts[col] = (
                     self.data.select(col).pipe(collect).n_unique()
@@ -427,7 +437,7 @@ class MetaGen:
         self, max_number_of_unique_to_show: int = 10
     ) -> dict[Hashable, list[Any] | list[None] | None]:
         unique_values: dict[Hashable, list[Any] | list[None] | None] = {}
-        for col in self.data.columns:
+        for col in self.columns:
             if not self._is_column_all_null(col):
                 values = (
                     self.data.select(col).pipe(collect).unique()[col].to_list()
@@ -498,7 +508,11 @@ class MetaGen:
         self, output_path: Path, metadata: OptionalPandasDataFrame
     ) -> None:
         metadata = metadata if metadata is not None else self._metadata
-        metadata.to_excel(output_path, sheet_name="Fields", index=False)
+        metadata.to_excel(
+            excel_writer=output_path,
+            sheet_name="Fields",
+            index=False,
+        )
 
     def _write_csv_metadata(
         self, output_path: Path, metadata: OptionalPandasDataFrame
@@ -535,7 +549,7 @@ class MetaGen:
         with_replacement: bool = False,
         inspection_modes: Sequence[InspectionMode] | None = None,
         formats_to_write: set[MetaGenSupportedFileExtension] | None = None,
-        mode: MetaGenSupportedLoadingMode = MetaGenSupportedLoadingMode.LAZY,
+        loading_mode: MetaGenSupportedLoadingMode = MetaGenSupportedLoadingMode.LAZY,
     ) -> None:
 
         inspection_modes = inspection_modes or InspectionMode.list()
@@ -550,7 +564,7 @@ class MetaGen:
                 )
                 self.write_extract_by_inspection_mode(
                     output_path=path,
-                    mode=mode,
+                    loading_mode=loading_mode,
                     inspection_mode=inspection_mode,
                     random_seed=random_seed,
                     number_rows=number_rows,
@@ -560,14 +574,14 @@ class MetaGen:
     def write_extract_by_inspection_mode(
         self,
         output_path: Path,
-        mode: MetaGenSupportedLoadingMode,
+        loading_mode: MetaGenSupportedLoadingMode,
         inspection_mode: InspectionMode,
         random_seed: int | None,
         number_rows: int,
         with_replacement: bool,
     ) -> None:
         data = self.extract_data(
-            mode=mode,
+            loading_mode=loading_mode,
             tbl_rows=number_rows,
             inspection_mode=inspection_mode,
             random_seed=random_seed,
@@ -585,14 +599,13 @@ class MetaGen:
         self,
         data: DataFrameT | None = None,
         tbl_rows: int = 10,
-        tbl_cols: int | None = None,
+        tbl_cols: int = -1,
         fmt_str_lengths: int = 50,
     ) -> None:
         """
         Inspect the data.
         """
         data_to_look = self.data if data is None else data
-        tbl_cols = tbl_cols or len(self.data.columns)
         with pl.Config(
             fmt_str_lengths=fmt_str_lengths,
             tbl_cols=tbl_cols,
@@ -602,7 +615,7 @@ class MetaGen:
 
     def extract_data(
         self,
-        mode: MetaGenSupportedLoadingMode,
+        loading_mode: MetaGenSupportedLoadingMode,
         inspection_mode: InspectionMode,
         tbl_rows: int = 10,
         random_seed: int | None = None,
@@ -614,7 +627,7 @@ class MetaGen:
         """
         data = extract_data(
             df=self.data,
-            mode=mode,
+            loading_mode=loading_mode,
             tbl_rows=tbl_rows,
             inspection_mode=inspection_mode,
             random_seed=random_seed,

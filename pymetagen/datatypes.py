@@ -1,9 +1,76 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from enum import Enum
 
+import polars as pl
+
+from pymetagen._typing import SchemaDict
 from pymetagen.utils import EnumListMixin
+
+
+class MetaGenMetadataColumn(EnumListMixin, str, Enum):
+    """
+    Columns in the metadata table.
+    """
+
+    NAME = "Name"
+    LONG_NAME = "Long Name"
+    TYPE = "Type"
+    DESCRIPTION = "Description"
+    MIN = "Min"
+    MAX = "Max"
+    MEAN = "Mean"
+    STD = "Std"
+    MIN_LENGTH = "Min Length"
+    MAX_LENGTH = "Max Length"
+    NUMBER_NULLS = "# nulls"
+    NUMBER_EMPTY_ZERO = "# empty/zero"
+    NUMBER_POSITIVE = "# positive"
+    NUMBER_NEGATIVE = "# negative"
+    NUMBER_UNIQUE = "# unique"
+    VALUES = "Values"
+
+    @classmethod
+    def interger_dtypes(cls) -> SchemaDict:
+        return {
+            cls.MIN_LENGTH: pl.Int64,
+            cls.MAX_LENGTH: pl.Int64,
+            cls.NUMBER_NULLS: pl.Int64,
+            cls.NUMBER_EMPTY_ZERO: pl.Int64,
+            cls.NUMBER_POSITIVE: pl.Int64,
+            cls.NUMBER_NEGATIVE: pl.Int64,
+            cls.NUMBER_UNIQUE: pl.Int64,
+        }
+
+    @classmethod
+    def pymetagen_columns(
+        cls, include_name_column: bool = False
+    ) -> list[MetaGenMetadataColumn]:
+        columns = [
+            cls.LONG_NAME,
+            cls.TYPE,
+            cls.DESCRIPTION,
+            cls.MIN,
+            cls.MAX,
+            cls.STD,
+            cls.MIN_LENGTH,
+            cls.MAX_LENGTH,
+            cls.NUMBER_NULLS,
+            cls.NUMBER_EMPTY_ZERO,
+            cls.NUMBER_POSITIVE,
+            cls.NUMBER_NEGATIVE,
+            cls.NUMBER_UNIQUE,
+            cls.VALUES,
+        ]
+        if include_name_column:
+            columns.insert(0, cls.NAME)
+
+        return columns
+
+    @classmethod
+    def as_dict(cls) -> Mapping[MetaGenMetadataColumn, str]:
+        return {col: col.value for col in cls}
 
 
 class MetaGenSupportedLoadingMode(EnumListMixin, str, Enum):
