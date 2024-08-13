@@ -314,7 +314,39 @@ Options:
 
 ### Filter
 
-A tool to filter a data set.
+A tool to filter a data set. This command is useful to filter a data set based on
+a SQL query. The following command:
+
+```bash
+metagen filter -i tests/data/testdata.csv -q "SELECT * FROM data WHERE imdb_score > 9"
+```
+
+will generate the following output:
+
+![filtered_data_output]("docs/img/filtered_data_output.png")
+
+The filter command has the following options:
+
+```bash
+Options:
+  -i, --input PATH                Input file path. Can be of type: .csv,
+                                  .parquet, .xlsx, .json  [required]
+  -t, --table-name TEXT           Name of the table to filter. Defaults to the
+                                  input file name.
+  -o, --output FILE               Output file path. Can be of type: .csv,
+                                  .parquet, .xlsx, .json
+  -q, --query TEXT                SQL query string/file to apply to the data.
+                                  [required]
+  -m, --loading-mode [lazy|eager]
+                                  (optional) Whether to use lazy or eager
+                                  mode. Defaults to lazy.
+  -e, --eager BOOLEAN             (optional) Whether to use lazy or eager
+                                  mode. Defaults to lazy.
+  -P, --preview                   (optional flag) Opens a Quick Look Preview
+                                  mode of the file. NOTE: Only works for OS
+                                  operating systems). Defaults to False.
+  -h, --help                      Show this message and exit.
+```
 
 ### Extracts
 
