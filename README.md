@@ -272,14 +272,10 @@ parquet files.
 The following command:
 
 ```bash
-metagen inspect -i tests/data/input_abc_partition.parquet
+metagen inspect -i tests/data/input_ab_partition.parquet
 ```
 
 will generate the following output:
-
-```bash
->>> Inspecting file: tests/data/input_abc_partition.parquet
-```
 
 The inspect command has the following options:
 
@@ -315,7 +311,8 @@ Options:
 ### Filter
 
 A tool to filter a data set. This command is useful to filter a data set based on
-a SQL query. The following command:
+a SQL query, where the table name is the name of the file, by default.
+The following command:
 
 ```bash
 metagen filter -i tests/data/testdata.csv -q "SELECT * FROM data WHERE imdb_score > 9"
@@ -325,6 +322,11 @@ will generate the following output:
 
 <img width="797" alt="filtered_data_output" src="https://github.com/user-attachments/assets/094c24b9-7b2e-4a9d-8c70-ab1abf3285c5">
 
+It is important to note that the filter command needs a query to filter the data. It can
+be a SQL query string or a file containing the query. The output file is not required,
+when no output file is provided, the filtered data will be printed to the console. Also,
+there is an option to open a preview of the filtered data file using the `-P` flag, this
+option only works for OS systems that have a default application to open the file.
 
 The filter command has the following options:
 
