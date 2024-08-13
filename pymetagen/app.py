@@ -441,7 +441,6 @@ def extracts(
         with_replacement=with_replacement,
         inspection_modes=inspection_modes,
         formats_to_write=formats_to_write,
-        loading_mode=MetaGenSupportedLoadingMode(loading_mode),
     )
 
 
