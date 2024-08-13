@@ -40,14 +40,7 @@ metagen.data.head()
 ```
 
 <div>
-    <style>
-        .dataframe > thead > tr,
-        .dataframe > tbody > tr {
-            text-align: right;
-            white-space: pre-wrap;
-        }
-    </style>
-    <small>shape: (5, 5)</small>
+<small>shape: (5, 5)</small>
     <table border="1" class="dataframe">
         <thead>
             <tr><th>title</th><th>release_year</th><th>budget</th><th>gross</th><th>imdb_score</th></tr>
