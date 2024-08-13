@@ -277,6 +277,8 @@ metagen inspect -i tests/data/input_ab_partition.parquet
 
 will generate the following output:
 
+<img width="599" alt="inspect_data_ouput" src="https://github.com/user-attachments/assets/92e7310c-a6c0-4d72-b290-d5738fa43dac">
+
 The inspect command has the following options:
 
 ```bash
