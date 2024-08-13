@@ -295,7 +295,6 @@ def inspect(
     metagen = MetaGen.from_path(path=input, loading_mode=loading_mode)
     columns_length = metagen.columns_length
     metagen.extract_data(
-        loading_mode=loading_mode,
         tbl_rows=number_rows,
         inspection_mode=inspection_mode,
         random_seed=random_seed,

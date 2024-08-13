@@ -324,7 +324,7 @@ class TestMetaGenExtractData:
         )
 
         extract = metagen.extract_data(
-            tbl_rows=2, loading_mode=mode, inspection_mode=inspection_mode
+            tbl_rows=2, inspection_mode=inspection_mode
         )
 
         assert extract.shape[0] == 2

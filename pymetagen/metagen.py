@@ -589,7 +589,6 @@ class MetaGen:
         with_replacement: bool,
     ) -> None:
         data = self.extract_data(
-            loading_mode=self.loading_mode,
             tbl_rows=number_rows,
             inspection_mode=inspection_mode,
             random_seed=random_seed,
@@ -623,7 +622,6 @@ class MetaGen:
 
     def extract_data(
         self,
-        loading_mode: MetaGenSupportedLoadingMode,
         inspection_mode: InspectionMode,
         tbl_rows: int = 10,
         random_seed: int | None = None,
@@ -635,7 +633,6 @@ class MetaGen:
         """
         data = extract_data(
             df=self.data,
-            loading_mode=loading_mode,
             tbl_rows=tbl_rows,
             inspection_mode=inspection_mode,
             random_seed=random_seed,

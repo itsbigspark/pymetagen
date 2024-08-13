@@ -135,22 +135,19 @@ def get_nested_path(
 
 def sample(
     df: DataFrameT,
-    loading_mode: MetaGenSupportedLoadingMode,
     tbl_rows: int = 10,
     random_seed: int | None = None,
     with_replacement: bool = False,
 ) -> DataFrameT:
 
-    if loading_mode == "eager":
-        assert isinstance(df, pl.DataFrame)
+    if isinstance(df, pl.DataFrame):
         row_depth = df.height
         return df.sample(
             n=min(tbl_rows, row_depth),
             with_replacement=with_replacement,
             seed=random_seed,
         )
-    elif loading_mode == "lazy":
-        assert isinstance(df, pl.LazyFrame)
+    elif isinstance(df, pl.LazyFrame):
         random_generator = np.random.default_rng(random_seed)
         row_depth = int(df.select(pl.first()).select(pl.len()).collect()[0, 0])
 
@@ -176,7 +173,6 @@ def sample(
 
 def extract_data(
     df: DataFrameT,
-    loading_mode: MetaGenSupportedLoadingMode,
     tbl_rows: int = 10,
     inspection_mode: InspectionMode = InspectionMode.head,
     random_seed: int | None = None,
@@ -201,9 +197,7 @@ def extract_data(
             f"inspection_mode must be one of {InspectionMode.list()}"
         )
     if inspection_mode == InspectionMode.sample:
-        df = df.pipe(
-            sample, loading_mode, tbl_rows, random_seed, with_replacement
-        )
+        df = df.pipe(sample, tbl_rows, random_seed, with_replacement)
     elif inspection_mode == InspectionMode.tail:
         df = df.tail(tbl_rows)
     elif inspection_mode == InspectionMode.head:
