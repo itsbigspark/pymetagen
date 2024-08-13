@@ -323,7 +323,7 @@ metagen filter -i tests/data/testdata.csv -q "SELECT * FROM data WHERE imdb_scor
 
 will generate the following output:
 
-![filtered_data_output]("docs/img/filtered_data_output.png")
+![filtered_data_output]("https://github.com/github/smartdatafoundry/blob/docs/img/filtered_data_output.png")
 
 The filter command has the following options:
 
