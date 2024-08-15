@@ -69,8 +69,9 @@ $ metagen metadata -i tests/data/testdata.csv -o tests/data/testdata_metadata.cs
 
 - **Data Inspection** Inspect a data file (e.g., a partitioned Parquet file):
 
-bash
+```bash
 metagen inspect -i tests/data/input_ab_partition.parquet
+```
 
 - **Data Filtering** Filter a data set using an SQL query:
 
