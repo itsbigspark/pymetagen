@@ -59,8 +59,7 @@ metagen.write_metadata("tests/data/testdata_metadata.csv")
 
 ### Command Line Interface
 
-- **Metadata Generation**
-Generate metadata for a tabular data file:
+- **Metadata Generation** Generate metadata for a tabular data file:
 
 ```bash
 $ metagen metadata -i tests/data/testdata.csv -o tests/data/testdata_metadata.csv
@@ -68,23 +67,18 @@ $ metagen metadata -i tests/data/testdata.csv -o tests/data/testdata_metadata.cs
 >>> Generating metadata for tests/data/testdata.csv...
 ```
 
-- **Data Inspection**
-Inspect a data file (e.g., a partitioned Parquet file):
+- **Data Inspection** Inspect a data file (e.g., a partitioned Parquet file):
 
 bash
 metagen inspect -i tests/data/input_ab_partition.parquet
 
-_Data Filtering
-
-Filter a data set using an SQL query:
+- **Data Filtering** Filter a data set using an SQL query:
 
 ```bash
 metagen filter -i tests/data/testdata.csv -q "SELECT * FROM data WHERE imdb_score > 9"
 ```
 
-- **Data Extraction**
-
-Extract a specific number of rows from a data set:
+- **Data Extraction** Extract a specific number of rows from a data set:
 
 ```bash
 $ metagen extracts -i tests/data/testdata.csv -o tests.csv -n 3
