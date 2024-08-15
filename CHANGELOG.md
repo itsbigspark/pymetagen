@@ -16,3 +16,4 @@ Development changes:
 - Uses `Enum` class to define the metadata colum names.
 - Now we can view the metadata table without the need to parse an output path to write or `-P` flag.
 - Adds a polars version compatibility function to get the schema.
+- Removes tracking `poetry.lock` file from the repository.
