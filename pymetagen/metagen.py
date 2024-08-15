@@ -51,7 +51,7 @@ class MetaGen:
     Generate metadata for a Polars DataFrame.
 
     Args:
-        data: Polars DataFrame to generate metadata for.
+        data: Polars DataFrame or LazyFrame to generate metadata for.
         descriptions: A dictionary of column names, each containing a
             dictionary with keys "description" and "long_name". e.g.
                 "column_name": {
@@ -59,6 +59,9 @@ class MetaGen:
                     "long_name": "A long name for the column",
                 }
         compute_metadata: Flag for computing metadata on instantiation
+        loading_mode: Loading mode to use.
+                     See :class:`pymetagen.datatypes.MetaGenSupportedLoadingModes`
+                     for supported modes.
     """
 
     def __init__(
@@ -66,6 +69,7 @@ class MetaGen:
         data: DataFrameT,
         descriptions: dict[str, dict[str, str]] | None = None,
         compute_metadata: bool = False,
+        loading_mode: MetaGenSupportedLoadingMode | None = None,
     ):
         self.data = data
         self.data_schema = get_data_schema(self.data)
@@ -74,6 +78,12 @@ class MetaGen:
         self.descriptions = descriptions or {}
         if compute_metadata:
             self.pandas_metadata = self._metadata
+
+        self.loading_mode = loading_mode or (
+            MetaGenSupportedLoadingMode.LAZY
+            if isinstance(self.data, pl.LazyFrame)
+            else MetaGenSupportedLoadingMode.EAGER
+        )
 
     @classmethod
     def from_path(
@@ -146,6 +156,7 @@ class MetaGen:
             data=data,
             descriptions=descriptions,
             compute_metadata=compute_metadata,
+            loading_mode=loading_mode,
         )
 
     @cached_property
@@ -549,7 +560,6 @@ class MetaGen:
         with_replacement: bool = False,
         inspection_modes: Sequence[InspectionMode] | None = None,
         formats_to_write: set[MetaGenSupportedFileExtension] | None = None,
-        loading_mode: MetaGenSupportedLoadingMode = MetaGenSupportedLoadingMode.LAZY,
     ) -> None:
 
         inspection_modes = inspection_modes or InspectionMode.list()
@@ -564,7 +574,6 @@ class MetaGen:
                 )
                 self.write_extract_by_inspection_mode(
                     output_path=path,
-                    loading_mode=loading_mode,
                     inspection_mode=inspection_mode,
                     random_seed=random_seed,
                     number_rows=number_rows,
@@ -574,14 +583,12 @@ class MetaGen:
     def write_extract_by_inspection_mode(
         self,
         output_path: Path,
-        loading_mode: MetaGenSupportedLoadingMode,
         inspection_mode: InspectionMode,
         random_seed: int | None,
         number_rows: int,
         with_replacement: bool,
     ) -> None:
         data = self.extract_data(
-            loading_mode=loading_mode,
             tbl_rows=number_rows,
             inspection_mode=inspection_mode,
             random_seed=random_seed,
@@ -615,7 +622,6 @@ class MetaGen:
 
     def extract_data(
         self,
-        loading_mode: MetaGenSupportedLoadingMode,
         inspection_mode: InspectionMode,
         tbl_rows: int = 10,
         random_seed: int | None = None,
@@ -627,7 +633,6 @@ class MetaGen:
         """
         data = extract_data(
             df=self.data,
-            loading_mode=loading_mode,
             tbl_rows=tbl_rows,
             inspection_mode=inspection_mode,
             random_seed=random_seed,

@@ -324,7 +324,7 @@ class TestMetaGenExtractData:
         )
 
         extract = metagen.extract_data(
-            tbl_rows=2, loading_mode=mode, inspection_mode=inspection_mode
+            tbl_rows=2, inspection_mode=inspection_mode
         )
 
         assert extract.shape[0] == 2
@@ -354,7 +354,6 @@ class TestMetaGenWriteExtracts:
         file_name = f"test-{inspection_mode}.csv"
         metagen.write_extract_by_inspection_mode(
             output_path=tmp_dir_path / file_name,
-            loading_mode=mode,
             inspection_mode=inspection_mode,
             random_seed=None,
             number_rows=2,
@@ -378,9 +377,7 @@ class TestMetaGenWriteExtracts:
             loading_mode=mode,
         )
         metagen.write_extracts(
-            output_path=tmp_dir_path / "test.csv",
-            number_rows=2,
-            loading_mode=mode,
+            output_path=tmp_dir_path / "test.csv", number_rows=2
         )
         for inspection_mode in InspectionMode.values():
             file_name = f"test-{inspection_mode}.csv"
