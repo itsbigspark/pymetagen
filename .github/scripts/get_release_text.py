@@ -17,7 +17,7 @@ def get_release_text(
     """
     pyproject = pyproject_path.read_text()
     version_line = re.search(
-        r"version\s*=\s*['\"](\d+\.\d+\.\d+\.\d+)['\"]", pyproject
+        r"version\s*=\s*['\"](\d+\.\d+\.\d)['\"]", pyproject
     )
     assert version_line
     version: str = version_line.group(1)
