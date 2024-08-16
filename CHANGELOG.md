@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## Upcoming Release
+## pymetagen-0.3.0 (2024-08-16)
 
 General changes:
 
