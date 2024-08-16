@@ -60,4 +60,4 @@ jobs:
             TAG_NAME: ${{ steps.set_release_options.outputs.TAG_NAME }}
             BODY_PATH: release_text.txt
         run: |
-            gh release create $TAG_NAME -F $BODY_PATH --target GITHUB_REF_NAME
+            gh release create $TAG_NAME -F $BODY_PATH --target GITHUB_HEAD_REF
