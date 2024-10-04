@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## pymetagen-0.3.1 (2024-10-04)
+
+- Adds a py.typed file.
+
 ## pymetagen-0.3.0 (2024-08-16)
 
 General changes:
