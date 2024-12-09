@@ -7,7 +7,7 @@ repos:
       verbose: true
 
 - repo: https://github.com/floatingpurr/sync_with_poetry
-  rev: "1.1.0" # the revision or tag to clone at
+  rev: "1.2.0" # the revision or tag to clone at
   hooks:
     - id: sync_with_poetry
 
@@ -22,7 +22,7 @@ repos:
     - id: isort
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.6.9
+  rev: v0.8.2
   hooks:
     - id: ruff
       types_or: [python, pyi, jupyter]
