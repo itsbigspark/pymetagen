@@ -10,6 +10,9 @@ commands:
       Checkout the code and install dependencies
     steps:
       - checkout
+      - run:
+          name: Poetry Lock
+          command: poetry lock
       - restore_cache:
           key: poetry-cache-{{ checksum "poetry.lock" }}
       - run:
