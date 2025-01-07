@@ -11,6 +11,9 @@ commands:
     steps:
       - checkout
       - run:
+          name: Update Poetry
+          command: poetry self update
+      - run:
           name: Poetry Lock
           command: poetry lock
       - restore_cache:
