@@ -142,8 +142,12 @@ class MetaGen:
             func_map: dict[
                 str, Callable[[Path], dict[str, dict[str, str]]]
             ] = {
-                MetaGenSupportedFileExtension.JSON.value: cls._load_descriptions_from_json,
-                MetaGenSupportedFileExtension.CSV.value: cls._load_descriptions_from_csv,
+                MetaGenSupportedFileExtension.JSON.value: (
+                    cls._load_descriptions_from_json
+                ),
+                MetaGenSupportedFileExtension.CSV.value: (
+                    cls._load_descriptions_from_csv
+                ),
             }
 
             descriptions = func_map[descriptions_path.suffix](
