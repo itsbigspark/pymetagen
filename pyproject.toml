@@ -1,6 +1,6 @@
 [project]
 name = "pymetagen"
-version = "0.3.1"
+version = "0.3.2"
 description = "Metadata generator using polars as backend."
 authors = [{ name = "Smart Data Foundry", email = "info@smartdatafoundry.com" }]
 readme = "README.md"
