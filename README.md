@@ -3,7 +3,7 @@
 <!-- image of pyMetaGen -->
 
 <p align="center">
-    <img src="./docs/img/pyMetagenLogo.svg" alt="pymetagenlogo">
+    <img src="https://github.com/smartdatafoundry/pymetagen/blob/dev/main/docs/img/pyMetaGenLogo.png" alt="pymetagenlogo">
 </p>
 
 **PyMetaGen** is a powerful and fast data quality tool base on [Polars](https://pola.rs/#) designed for generating metadata and extracting useful information from various data file formats. It provides both a Python API and a command-line interface (CLI) to inspect, filter, and extract data from files such as CSV, JSON, Parquet, and Excel.
