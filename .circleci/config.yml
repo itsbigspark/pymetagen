@@ -82,7 +82,7 @@ jobs:
       - run:
           name: Run tests
           command: |
-            poetry run tox -e py39
+            poetry run tox -- -e py39
       - save-test-results
   unit-test-310:
     executor: python310
@@ -91,7 +91,7 @@ jobs:
       - run:
           name: Run tests
           command: |
-            poetry run tox -e py310
+            poetry run tox -- -e py310
       - save-test-results
   unit-test-311:
     executor: python311
@@ -100,7 +100,7 @@ jobs:
       - run:
           name: Run tests
           command: |
-            poetry run tox -e py311 -- -- --cov=pymetagen
+            poetry run tox -- -e py311 -- -- --cov=pymetagen
             poetry run coverage report -m
             poetry run coverage xml -o .coverage-reports/coverage.xml
       - save-test-results
@@ -118,7 +118,7 @@ jobs:
       - run:
           name: Run tests
           command: |
-            poetry run tox -e py312
+            poetry run tox -- -e py312
       - save-test-results
 
 workflows:
