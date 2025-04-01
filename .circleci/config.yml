@@ -100,7 +100,7 @@ jobs:
       - run:
           name: Run tests
           command: |
-            poetry run tox -- -e py311 -- -- --cov=pymetagen
+            poetry run tox -- -e py311 -- --cov=pymetagen
             poetry run coverage report -m
             poetry run coverage xml -o .coverage-reports/coverage.xml
       - save-test-results
