@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## upcoming release
+
+- Migrate from poetry to uv project management
+
 ## pymetagen-0.3.2 (2025-01-07)
 
 - Updates poetry to version 2.0.
