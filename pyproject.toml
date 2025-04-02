@@ -12,29 +12,26 @@ dependencies = [
     "openpyxl>=3.1.4",
     "click>=8.1.7",
     "xlsxwriter>=3.2.0",
-    "poetry (>=2.0.0,<3.0.0)",
 ]
-
-[tool.poetry.group.dev.dependencies]
-pre-commit = "^4.0.1"
-pytest = "^8.2.2"
-tox = "^4.15.1"
-typing-extensions = "^4.12.2"
-mypy = "^1.11.1"
-coverage = "^7.6.0"
-pytest-cov = "^6.0.0"
-pytest-xdist = "^3.6.1"
-pandas-stubs = "^2.2.2.240603"
+[dependency-groups]
+dev = [
+    "pre-commit>=4.0.1",
+    "pytest>=8.2.2",
+    "tox>=4.15.1",
+    "tox-uv>=1.25.0",
+    "typing-extensions>=4.12.2",
+    "mypy>=1.11.1",
+    "coverage>=7.6.0",
+    "pytest-cov>=6.0.0",
+    "pytest-xdist>=3.6.1",
+    "pandas-stubs>=2.2.2.240603",
+]
 
 [project.optional-dependencies]
 xlsx = ["xlsxwriter"]
 
 [project.scripts]
 metagen = 'pymetagen.app:cli'
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 line-length = 79
