@@ -30,7 +30,7 @@ executors:
     resource_class: small
 
 jobs:
-  coverage:
+  unit-tests:
     executor: base
     steps:
       - checkout
@@ -38,7 +38,7 @@ jobs:
       - run:
           name: Run tests
           command: |
-            uv run tox -e py311 -- --cov=pymetagen
+            uv run tox
             uv run coverage report -m
             uv run coverage xml -o .coverage-reports/coverage.xml
       - save-test-results
@@ -49,22 +49,12 @@ jobs:
             uv run mypy | tee .mypy-reports/report.txt || true
             echo "Mypy report saved to .mypy-reports/report.txt"
       - sonarcloud/scan
-  unit-test:
-    executor: base
-    steps:
-      - checkout
-      - install-uv
-      - run:
-          name: Run tests
-          command: |
-            uv run tox -e py39,py310,py312
-      - save-test-results
+
 
 workflows:
   commit:
     # run on every commit
     jobs:
-      - unit-test
-      - coverage:
+      - unit-tests:
           context:
             - SONARCLOUD
