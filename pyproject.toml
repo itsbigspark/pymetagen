@@ -66,7 +66,7 @@ black = true
 style = "sphinx"
 
 [tool.pytest.ini_options]
-addopts = '--strict-markers --junitxml=test-reports/pytest.xml'
+addopts = '--strict-markers'
 junit_family = 'xunit1'
 
 [tool.mypy]
@@ -97,3 +97,16 @@ exclude_also = [
 
 [tool.coverage.run]
 branch = true
+
+[tool.tox]
+env_list = ["3.9", "3.10", "3.11", "3.12"]
+
+[tool.tox.env_run_base]
+description = "Run test under {base_python}"
+package = "wheel"
+wheel_build_env = ".pkg"
+deps = ["pytest", "pytest-cov"]
+extras = ["xlsx"]
+commands = [
+    ["pytest", "{tty:--color=yes}", "{posargs}", "--cov", "--cov-append", "--cov-report=term-missing", "--junitxml=test-reports/pytest_{base_python}.xml"]
+]
