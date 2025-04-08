@@ -126,8 +126,8 @@ def test_map_inspection_modes_raises_error(inspection_modes: Sequence[str]):
 
 
 class TestMetaGenUtilsCustomJSONDecoder:
-    def test_custom_json_decoder(self):
-        path = Path("tests/data/sample.json")
+    def test_custom_json_decoder(self, test_data_dir: Path):
+        path = test_data_dir / "sample.json"
         with path.open("r") as f:
             data = json.load(f, cls=CustomDecoder)
 

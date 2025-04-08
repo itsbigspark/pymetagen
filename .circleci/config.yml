@@ -38,7 +38,7 @@ jobs:
       - run:
           name: Run tests
           command: |
-            uv run tox
+            uv run tox -p
             uv run coverage report -m
             uv run coverage xml -o .coverage-reports/coverage.xml
       - save-test-results
