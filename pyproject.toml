@@ -99,7 +99,7 @@ exclude_also = [
 branch = true
 
 [tool.tox]
-env_list = ["3.9", "3.10", "3.11", "3.12"]
+env_list = ["3.9", "3.10", "3.11", "3.12", "type"]
 
 [tool.tox.env_run_base]
 description = "Run test under {base_python}"
@@ -109,4 +109,12 @@ deps = ["pytest", "pytest-cov"]
 extras = ["xlsx"]
 commands = [
     ["pytest", "{tty:--color=yes}", "{posargs}", "--cov", "--cov-append", "--cov-report=term-missing", "--junitxml=test-reports/pytest_{base_python}.xml"]
+]
+
+[tool.tox.env.type]
+description = "Run type check under {base_python}"
+deps = ["mypy"]
+allowlist_externals = ["bash"]
+commands = [
+    ["bash", "./run_mypy.sh"]
 ]

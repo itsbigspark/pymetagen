@@ -46,7 +46,7 @@ jobs:
           name: mypy
           command: |
             mkdir -p .mypy-reports
-            uv run mypy | tee .mypy-reports/report.txt || true
+            uv run bash run_mpy.sh
             echo "Mypy report saved to .mypy-reports/report.txt"
       - sonarcloud/scan
 
