@@ -39,7 +39,6 @@ jobs:
           name: Run tests
           command: |
             uv run tox -p
-            uv run coverage combine 
             uv run coverage xml -o .coverage-reports/coverage.xml
       - save-test-results
       - store_artifacts:
