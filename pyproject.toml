@@ -104,6 +104,8 @@ env_list = ["3.9", "3.10", "3.11", "3.12", "type"]
 [tool.tox.env_run_base]
 description = "Run test under {base_python}"
 runner = "uv-venv-lock-runner"
+package = "wheel"
+wheel_build_env = ".pkg"
 extras = ["xlsx"]
 commands = [
     ["pytest", "{tty:--color=yes}", "{posargs}", "--cov", "--cov-append", "--cov-report=term-missing", "--junitxml=test-reports/pytest_{base_python}.xml"]
