@@ -27,7 +27,7 @@ executors:
   base:
     docker:
       - image: cimg/base:current
-    resource_class: small
+    resource_class: medium
 
 jobs:
   unit-tests:
