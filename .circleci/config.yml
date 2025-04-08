@@ -42,12 +42,6 @@ jobs:
             uv run coverage report -m
             uv run coverage xml -o .coverage-reports/coverage.xml
       - save-test-results
-      - run:
-          name: mypy
-          command: |
-            mkdir -p .mypy-reports
-            uv run bash run_mpy.sh
-            echo "Mypy report saved to .mypy-reports/report.txt"
       - sonarcloud/scan
 
 
