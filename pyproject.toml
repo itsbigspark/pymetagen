@@ -23,7 +23,6 @@ dev = [
     "mypy>=1.11.1",
     "coverage>=7.6.0",
     "pytest-cov>=6.0.0",
-    "pytest-xdist>=3.6.1",
     "pandas-stubs>=2.2.2.240603",
 ]
 
@@ -99,14 +98,21 @@ exclude_also = [
 branch = true
 
 [tool.tox]
-env_list = ["3.9", "3.10", "3.11", "3.12"]
+env_list = ["3.9", "3.10", "3.11", "3.12", "type"]
 
 [tool.tox.env_run_base]
 description = "Run test under {base_python}"
-package = "wheel"
-wheel_build_env = ".pkg"
 deps = ["pytest", "pytest-cov"]
+package = "wheel"
 extras = ["xlsx"]
 commands = [
     ["pytest", "{tty:--color=yes}", "{posargs}", "--cov", "--cov-append", "--cov-report=term-missing", "--junitxml=test-reports/pytest_{base_python}.xml"]
+]
+
+[tool.tox.env.type]
+description = "Run type check under {base_python}"
+runner = "uv-venv-lock-runner"
+allowlist_externals = ["bash"]
+commands = [
+    ["bash", "./run_mypy.sh"]
 ]

@@ -94,35 +94,6 @@ class TestMetaGen:
             outdata.columns
         ) == MetaGenMetadataColumn.pymetagen_columns(include_name_column=True)
 
-    @pytest.mark.parametrize(
-        "column_name, expected_value",
-        [
-            ["# nulls", 5],
-            ["# empty/zero", 5],
-            ["# unique", 1],
-            ["Values", [None]],
-        ],
-    )
-    def test_metadata_data_frame_with_null_column(
-        self,
-        capsys: pytest.CaptureFixture[str],
-        data: str,
-        request: pytest.FixtureRequest,
-        column_name: str,
-        expected_value: int | None,
-    ):
-        null_data = {
-            "data_values": [None, None, None, None, None],
-        }
-        null_data_frame = pl.DataFrame(
-            null_data, schema={"data_values": pl.Null}
-        )
-        metagen = MetaGen(data=null_data_frame)
-        metadata_df = metagen.compute_metadata()
-        metadata_dict = metadata_df.to_dict(orient="records").pop()
-
-        assert metadata_dict[column_name] == expected_value
-
 
 @pytest.mark.parametrize(
     "df_constructor",
@@ -199,6 +170,30 @@ class TestMetadataMethods:
             eager=eager,
         )
         assert isinstance(filtered, return_type)  # type: ignore
+
+
+@pytest.mark.parametrize(
+    "column_name, expected_value",
+    [
+        ["# nulls", 5],
+        ["# empty/zero", 5],
+        ["# unique", 1],
+        ["Values", [None]],
+    ],
+)
+def test_metadata_data_frame_with_null_column(
+    column_name: str,
+    expected_value: int | None,
+):
+    null_data = {
+        "data_values": [None, None, None, None, None],
+    }
+    null_data_frame = pl.DataFrame(null_data, schema={"data_values": pl.Null})
+    metagen = MetaGen(data=null_data_frame)
+    metadata_df = metagen.compute_metadata()
+    metadata_dict = metadata_df.to_dict(orient="records").pop()
+
+    assert metadata_dict[column_name] == expected_value
 
 
 @pytest.mark.parametrize(
@@ -286,16 +281,18 @@ def test_load_file_extension_none(
         )
 
 
-def test_file_extension_none_for_parquet_directories():
-    path = Path("tests/data/input_ab_partition")
+def test_file_extension_none_for_parquet_directories(test_data_dir: Path):
+    path = test_data_dir / "input_ab_partition"
     MetaGen.from_path(
         path=path,
         loading_mode=MetaGenSupportedLoadingMode.LAZY,
     )
 
 
-def test_file_extension_none_for_directories_with_no_parquet_files():
-    path = Path("tests/data/directory_without_parquet")
+def test_file_extension_none_for_directories_with_no_parquet_files(
+    test_data_dir: Path,
+):
+    path = test_data_dir / "directory_without_parquet"
     with pytest.raises(FileTypeUnsupportedError):
         MetaGen.from_path(
             path=path,
@@ -318,9 +315,10 @@ class TestMetaGenExtractData:
         self,
         mode: MetaGenSupportedLoadingMode,
         inspection_mode: InspectionMode,
+        test_data_dir: Path,
     ):
         metagen = MetaGen.from_path(
-            Path("tests/data/input_ab_partition.parquet"), loading_mode=mode
+            test_data_dir / "input_ab_partition.parquet", loading_mode=mode
         )
 
         extract = metagen.extract_data(
@@ -346,9 +344,10 @@ class TestMetaGenWriteExtracts:
         tmp_dir_path,
         inspection_mode: InspectionMode,
         mode: MetaGenSupportedLoadingMode,
+        test_data_dir: Path,
     ):
         metagen = MetaGen.from_path(
-            path=Path("tests/data/input_ab_partition.parquet"),
+            path=test_data_dir / "input_ab_partition.parquet",
             loading_mode=mode,
         )
         file_name = f"test-{inspection_mode}.csv"
@@ -371,9 +370,10 @@ class TestMetaGenWriteExtracts:
         self,
         tmp_dir_path: Path,
         mode: MetaGenSupportedLoadingMode,
+        test_data_dir: Path,
     ):
         metagen = MetaGen.from_path(
-            path=Path("tests/data/input_ab_partition.parquet"),
+            path=test_data_dir / "input_ab_partition.parquet",
             loading_mode=mode,
         )
         metagen.write_extracts(

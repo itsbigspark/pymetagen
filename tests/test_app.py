@@ -163,6 +163,7 @@ class TestCli:
         tmp_dir_path: Path,
         mode: MetaGenSupportedLoadingMode,
         sql_query: str,
+        test_data_dir: Path,
     ) -> None:
         runner = CliRunner()
         outpath: Path = tmp_dir_path / "testdata.csv"
@@ -171,7 +172,7 @@ class TestCli:
             [
                 "filter",
                 "-i",
-                "tests/data/testdata.csv",
+                str(test_data_dir / "testdata.csv"),
                 "-o",
                 str(outpath),
                 "--loading-mode",
