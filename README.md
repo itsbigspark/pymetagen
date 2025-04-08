@@ -44,7 +44,7 @@ from pymetagen import MetaGen
 
 # Create an instance of the MetaGen class reading a data file
 
-metagen = MetaGen.from_test_data_dir / "testdata.csv", loading_mode="eager"
+metagen = MetaGen.from_path("tests/data/testdata.csv", loading_mode="eager")
 
 # Display the first few rows of the data
 
