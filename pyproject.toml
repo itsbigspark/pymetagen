@@ -103,7 +103,8 @@ env_list = ["3.9", "3.10", "3.11", "3.12", "type"]
 
 [tool.tox.env_run_base]
 description = "Run test under {base_python}"
-runner = "uv-venv-lock-runner"
+# runner = "uv-venv-lock-runner"
+deps = ["pytest", "pytest-cov"]
 package = "wheel"
 wheel_build_env = ".pkg"
 extras = ["xlsx"]
@@ -113,7 +114,8 @@ commands = [
 
 [tool.tox.env.type]
 description = "Run type check under {base_python}"
-runner = "uv-venv-lock-runner"
+# runner = "uv-venv-lock-runner"
+deps = ["mypy"]
 allowlist_externals = ["bash"]
 commands = [
     ["bash", "./run_mypy.sh"]
