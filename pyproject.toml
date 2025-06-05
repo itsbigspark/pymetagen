@@ -2,7 +2,7 @@
 name = "pymetagen"
 version = "0.3.2"
 description = "Metadata generator using polars as backend."
-authors = [{ name = "Smart Data Foundry", email = "info@smartdatafoundry.com" }]
+authors = [{ name = "Bigspark", email = "info@itsbigspark.com" }]
 readme = "README.md"
 requires-python = ">=3.9,<4.0"
 dependencies = [
@@ -25,6 +25,10 @@ dev = [
     "pytest-cov>=6.0.0",
     "pandas-stubs>=2.2.2.240603",
 ]
+
+[tool.uv]
+package = true
+default-groups = ["dev"]
 
 [project.optional-dependencies]
 xlsx = ["xlsxwriter"]
@@ -69,7 +73,7 @@ addopts = '--strict-markers'
 junit_family = 'xunit1'
 
 [tool.mypy]
-files = "pymetagen"
+files = "src/pymetagen"
 python_version = "3.11"
 check_untyped_defs = true
 
@@ -106,13 +110,19 @@ deps = ["pytest", "pytest-cov"]
 package = "wheel"
 extras = ["xlsx"]
 commands = [
-    ["pytest", "{tty:--color=yes}", "{posargs}", "--cov", "--cov-append", "--cov-report=term-missing", "--junitxml=test-reports/pytest_{base_python}.xml"]
+    [
+        "pytest",
+        "{tty:--color=yes}",
+        "{posargs}",
+        "--cov",
+        "--cov-append",
+        "--cov-report=term-missing",
+        "--junitxml=test-reports/pytest_{base_python}.xml",
+    ],
 ]
 
 [tool.tox.env.type]
 description = "Run type check under {base_python}"
 runner = "uv-venv-lock-runner"
 allowlist_externals = ["bash"]
-commands = [
-    ["bash", "./run_mypy.sh"]
-]
+commands = [["bash", "./run_mypy.sh"]]
