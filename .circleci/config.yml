@@ -51,4 +51,4 @@ workflows:
     jobs:
       - unit-tests:
           context:
-            - SONARCLOUD
+            - SonarCloud
