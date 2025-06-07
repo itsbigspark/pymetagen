@@ -30,7 +30,7 @@ pip install pymetagen
 To install the package locally, use the following command:
 
 ```bash
-python -m pip install -U git+ssh://git@github.com/smartdatafoundry/dotdda.git@dev/main
+python -m pip install -U git+ssh://git@github.com/itsbigspark/dotdda.git@dev/main
 ```
 
 ## Usage

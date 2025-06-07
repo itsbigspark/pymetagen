@@ -565,7 +565,6 @@ class MetaGen:
         inspection_modes: Sequence[InspectionMode] | None = None,
         formats_to_write: set[MetaGenSupportedFileExtension] | None = None,
     ) -> None:
-
         inspection_modes = inspection_modes or InspectionMode.list()
         formats_to_write = formats_to_write or {
             MetaGenSupportedFileExtension(output_path.suffix)

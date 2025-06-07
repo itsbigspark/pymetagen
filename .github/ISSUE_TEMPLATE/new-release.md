@@ -27,7 +27,7 @@ assignees: ''
 
 ### 4. Deploy the Release
 
-- [ ] Trigger the [release](https://github.com/smartdatafoundry/pymetagen/actions/workflows/release.yml) job via GitHub Actions. This will:
+- [ ] Trigger the [release](https://github.com/itsbigspark/pymetagen/actions/workflows/release.yml) job via GitHub Actions. This will:
   - Validate the version number in `pyproject.toml` and the changelog.
     - If validation fails (version already released or changelog not updated), return to step 1.
 

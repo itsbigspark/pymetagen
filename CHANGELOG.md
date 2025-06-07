@@ -1,7 +1,11 @@
 # CHANGELOG
 
-## upcoming release
+## pymetagen-0.4.0 (2025-06-07)
 
+General changes:
+
+- Changes organization to bigspark.
+- Makes the project public.
 - Migrate from poetry to uv project management
 
 ## pymetagen-0.3.2 (2025-01-07)
