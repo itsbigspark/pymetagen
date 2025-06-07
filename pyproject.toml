@@ -1,10 +1,14 @@
 [project]
 name = "pymetagen"
-version = "0.3.2"
+version = "0.4.0"
 description = "Metadata generator using polars as backend."
-authors = [{ name = "Bigspark", email = "info@itsbigspark.com" }]
+authors = [
+    { name = "Victor Diaz @vadrienzo" },
+    { name = "William Arnott @w-arnott" },
+]
 readme = "README.md"
 license = "MIT"
+license-files = ["LICEN[CS]E*"]
 requires-python = ">=3.9,<4.0"
 dependencies = [
     "pyarrow>=15.0.0",
@@ -26,6 +30,10 @@ dev = [
     "pytest-cov>=6.0.0",
     "pandas-stubs>=2.2.2.240603",
 ]
+
+[project.urls]
+Homepage = "https://github.com/pypa/pymetagen"
+Issues = "https://github.com/pypa/pymetagen/issues"
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
