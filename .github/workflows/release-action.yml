@@ -60,4 +60,11 @@ jobs:
             TAG_NAME: ${{ steps.set_release_options.outputs.TAG_NAME }}
             BODY_PATH: release_text.txt
         run: |
-            gh release create $TAG_NAME -F $BODY_PATH --target $GITHUB_HEAD_REF
+            if [[ -z "$GITHUB_HEAD_REF" ]]; then
+              echo "GITHUB_HEAD_REF is not set. Using GITHUB_REF_NAME instead."
+              TARGET_BRANCH="$GITHUB_REF_NAME"
+            else
+              TARGET_BRANCH="$GITHUB_HEAD_REF"
+            fi
+            
+            gh release create "$TAG_NAME" -F "$BODY_PATH" --target "$TARGET_BRANCH"
