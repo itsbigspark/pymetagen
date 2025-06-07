@@ -1,4 +1,5 @@
 # PyMetaGen
+[![PyMetaGen tests](https://github.com/itsbigspark/pymetagen/actions/workflows/pypi-release.yml/badge.svg)](https://github.com/itsbigspark/pymetagen/actions/workflows/pypi-release.yml)
 
 <!-- image of pyMetaGen -->
 

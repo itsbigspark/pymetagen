@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## pymetagen-0.4.1 (2025-06-07)
+
+General changes:
+
+- Updates urls for finding repository.
+
 ## pymetagen-0.4.0 (2025-06-07)
 
 General changes:
