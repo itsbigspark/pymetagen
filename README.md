@@ -1,5 +1,6 @@
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=itsbigspark_pymetagen&metric=alert_status&token=ca78f8a35c6c2ac9c28a08070e00f0b07d7e2342)](https://sonarcloud.io/summary/new_code?id=itsbigspark_pymetagen)[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=itsbigspark_pymetagen&metric=coverage&token=ca78f8a35c6c2ac9c28a08070e00f0b07d7e2342)](https://sonarcloud.io/summary/new_code?id=itsbigspark_pymetagen)[![PyMetaGen Publish PyPi](https://github.com/itsbigspark/pymetagen/actions/workflows/pypi-release.yml/badge.svg)](https://github.com/itsbigspark/pymetagen/actions/workflows/pypi-release.yml)
+[![PyMetaGen GitHub release](https://github.com/itsbigspark/pymetagen/actions/workflows/pypi-release.yml/badge.svg)](https://github.com/itsbigspark/pymetagen/actions/workflows/pypi-release.yml)
 # PyMetaGen
-[![PyMetaGen tests](https://github.com/itsbigspark/pymetagen/actions/workflows/pypi-release.yml/badge.svg)](https://github.com/itsbigspark/pymetagen/actions/workflows/pypi-release.yml)
 
 <!-- image of pyMetaGen -->
 
