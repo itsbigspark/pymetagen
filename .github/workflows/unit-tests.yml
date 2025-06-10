@@ -1,0 +1,48 @@
+name: unit tests
+
+on:
+  workflow_dispatch:
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    container:
+      image: cimg/base:current
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install UV
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: uv pip install tox coverage
+
+      - name: Run tests
+        run: |
+          uv run tox -p
+          uv run coverage xml -o .coverage-reports/coverage.xml
+
+      - name: Save test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: test-reports/
+
+      - name: Store mypy artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mypy-reports
+          path: .mypy-reports/
+
+      - name: SonarCloud Scan
+        uses: sonarsource/sonarcloud-github-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

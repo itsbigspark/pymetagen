@@ -1,5 +1,5 @@
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=itsbigspark_pymetagen&metric=alert_status&token=ca78f8a35c6c2ac9c28a08070e00f0b07d7e2342)](https://sonarcloud.io/summary/new_code?id=itsbigspark_pymetagen)[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=itsbigspark_pymetagen&metric=coverage&token=ca78f8a35c6c2ac9c28a08070e00f0b07d7e2342)](https://sonarcloud.io/summary/new_code?id=itsbigspark_pymetagen)[![PyMetaGen GitHub release](https://github.com/itsbigspark/pymetagen/actions/workflows/release-action.yml/badge.svg)](https://github.com/itsbigspark/pymetagen/actions/workflows/release-action.yml)[![PyMetaGen Publish PyPi](https://github.com/itsbigspark/pymetagen/actions/workflows/pypi-release.yml/badge.svg)](https://github.com/itsbigspark/pymetagen/actions/workflows/pypi-release.yml)[![CircleCI](https://dl.circleci.com/status-badge/img/circleci/E2yL1VmSsVrCRNYYNptvyt/61gfAqXnv7nkeAjCUm2P1s/tree/dev/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/circleci/E2yL1VmSsVrCRNYYNptvyt/61gfAqXnv7nkeAjCUm2P1s/tree/dev/main)
 # PyMetaGen
-[![PyMetaGen tests](https://github.com/itsbigspark/pymetagen/actions/workflows/pypi-release.yml/badge.svg)](https://github.com/itsbigspark/pymetagen/actions/workflows/pypi-release.yml)
 
 <!-- image of pyMetaGen -->
 
