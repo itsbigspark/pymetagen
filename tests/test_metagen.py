@@ -360,14 +360,15 @@ def test__load_descriptions_from_json(
     assert descriptions == test_simple_column_metadata
 
 
-def test_column_simple_metadata_dict(
-    test_descriptions: dict[str, ColumnSimpleMetadata],
-) -> None:
-    for value in test_descriptions.values():
-        assert isinstance(value, dict)
-        assert set(value.keys()) == {"description", "long_name"}
-        assert isinstance(value["description"], str)
-        assert isinstance(value["long_name"], str)
+def test_column_simple_metadata():
+    d = ColumnSimpleMetadata(
+        description="A simple description",
+        long_name="A long name for the column",
+    )
+    assert isinstance(d, dict)
+    assert set(d.keys()) == {"description", "long_name"}
+    assert isinstance(d["description"], str)
+    assert isinstance(d["long_name"], str)
 
 
 class TestMetaGenExtractData:
