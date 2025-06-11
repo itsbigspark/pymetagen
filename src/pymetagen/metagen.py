@@ -5,6 +5,8 @@ PyMetaGen
 Python Metadata Generator
 """
 
+from __future__ import annotations
+
 import json
 import subprocess
 from collections.abc import Callable, Sequence
@@ -92,7 +94,7 @@ class MetaGen:
         loading_mode: MetaGenSupportedLoadingMode = MetaGenSupportedLoadingMode.LAZY,
         descriptions_path: Path | None = None,
         compute_metadata: bool = False,
-    ) -> "MetaGen":
+    ) -> MetaGen:
         """
         Generate metadata from a file.
 
