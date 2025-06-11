@@ -15,3 +15,18 @@ OptionalAnyValueDict: typing.TypeAlias = typing.Optional[dict[Hashable, Any]]
 
 PolarsDataType: typing.TypeAlias = typing.Union["DataTypeClass", "DataType"]
 SchemaDict: typing.TypeAlias = typing.Mapping[str, PolarsDataType]
+
+ColumnName: typing.TypeAlias = str
+ColumnDescription: typing.TypeAlias = str
+ColumnLongName: typing.TypeAlias = str
+
+
+class ColumnSimpleMetadata(typing.TypedDict):
+    """Simple metadata for a column.
+    Attributes:
+    - description: A brief description of the column.
+    - long_name: A more detailed or human-readable name for the column.
+    """
+
+    description: ColumnDescription
+    long_name: ColumnLongName
