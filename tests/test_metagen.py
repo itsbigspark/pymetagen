@@ -8,9 +8,10 @@ import polars as pl
 import pytest
 
 from pymetagen import MetaGen, json_metadata_to_pandas
-from pymetagen._typing import DataFrameT
+from pymetagen._typing import ColumnName, ColumnSimpleMetadata, DataFrameT
 from pymetagen.datatypes import (
     MetaGenMetadataColumn,
+    MetaGenSupportedFileExtension,
     MetaGenSupportedLoadingMode,
 )
 from pymetagen.exceptions import (
@@ -300,6 +301,75 @@ def test_file_extension_none_for_directories_with_no_parquet_files(
         )
 
 
+@pytest.fixture
+def test_simple_column_metadata() -> dict[ColumnName, ColumnSimpleMetadata]:
+    """Fixture to provide a simple column metadata example."""
+    return {
+        "a": ColumnSimpleMetadata(
+            description="The field labelled a",
+            long_name="aaaaaaaaaaaaaaa",
+        ),
+        "b": ColumnSimpleMetadata(
+            description="The field labelled b",
+            long_name="bbbbbb",
+        ),
+        "c": ColumnSimpleMetadata(
+            description="The field labelled c",
+            long_name="ccccccccccccccccccccc",
+        ),
+    }
+
+
+@pytest.fixture
+def test_descriptions(
+    descriptions_json_path: Path,
+) -> dict[ColumnName, ColumnSimpleMetadata]:
+    """Fixture to provide a simple column metadata example."""
+    return MetaGen._load_descriptions_from_json(descriptions_json_path)
+
+
+@pytest.mark.parametrize(
+    "descriptions_path",
+    [
+        "descriptions_csv_path",
+        "descriptions_json_path",
+    ],
+)
+def test__load_descriptions_from_json(
+    descriptions_path: str,
+    request: pytest.FixtureRequest,
+    test_simple_column_metadata: dict[str, ColumnSimpleMetadata],
+):
+    func_map: dict[
+        str, Callable[[Path], dict[ColumnName, ColumnSimpleMetadata]]
+    ] = {
+        MetaGenSupportedFileExtension.JSON.value: (
+            MetaGen._load_descriptions_from_json
+        ),
+        MetaGenSupportedFileExtension.CSV.value: (
+            MetaGen._load_descriptions_from_csv
+        ),
+    }
+    path: Path = request.getfixturevalue(descriptions_path)
+    descriptions = func_map[path.suffix](path)
+    assert isinstance(descriptions, dict)
+    assert set(descriptions.keys()) == set(test_simple_column_metadata.keys())
+    assert list(descriptions.values()) == list(
+        test_simple_column_metadata.values()
+    )
+    assert descriptions == test_simple_column_metadata
+
+
+def test_column_simple_metadata_dict(
+    test_descriptions: dict[str, ColumnSimpleMetadata],
+) -> None:
+    for value in test_descriptions.values():
+        assert isinstance(value, dict)
+        assert set(value.keys()) == {"description", "long_name"}
+        assert isinstance(value["description"], str)
+        assert isinstance(value["long_name"], str)
+
+
 class TestMetaGenExtractData:
     """Test extract data functionality."""
 
@@ -330,7 +400,6 @@ class TestMetaGenExtractData:
 
 
 class TestMetaGenWriteExtracts:
-
     @pytest.mark.parametrize(
         "mode",
         MetaGenSupportedLoadingMode.list(),
