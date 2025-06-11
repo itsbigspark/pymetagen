@@ -17,7 +17,10 @@ jobs:
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
-        run: uv pip install tox coverage
+        run: |
+           uv venv
+           uv pip install tox coverage
+
 
       - name: Run tests
         run: |
