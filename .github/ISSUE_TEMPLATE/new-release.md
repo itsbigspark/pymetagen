@@ -27,13 +27,15 @@ assignees: ''
 
 ### 4. Deploy the Release
 
-- [ ] Trigger the [release](https://github.com/itsbigspark/pymetagen/actions/workflows/release.yml) job via GitHub Actions. This will:
+- [ ] Trigger the [release](https://github.com/itsbigspark/pymetagen/actions/workflows/release-action.yml) job via GitHub Actions. This will:
   - Validate the version number in `pyproject.toml` and the changelog.
     - If validation fails (version already released or changelog not updated), return to step 1.
+- [ ] Trigger the [PyPi release](https://github.com/itsbigspark/pymetagen/actions/workflows/pypi-release.yml) job via GitHub Actions. 
 
 ### 5. Verify the Release
 
 - [ ] Check the `releases` page on GitHub to ensure the release has been created.
+- [ ] Verify the release on [PyPi](https://pypi.org/project/pymetagen/) to ensure it is available for download.
 
 ### 6. Post-Release
 

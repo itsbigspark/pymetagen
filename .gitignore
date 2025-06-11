@@ -167,3 +167,4 @@ cython_debug/
 uncommitted/*
 uv.lock
 .mypy-reports/report.txt
+.scannerwork/*

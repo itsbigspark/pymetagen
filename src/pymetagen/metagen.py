@@ -19,6 +19,8 @@ import polars as pl
 
 from pymetagen._typing import (
     Any,
+    ColumnName,
+    ColumnSimpleMetadata,
     DataFrameT,
     Hashable,
     OptionalAnyValueDict,
@@ -67,7 +69,7 @@ class MetaGen:
     def __init__(
         self,
         data: DataFrameT,
-        descriptions: dict[str, dict[str, str]] | None = None,
+        descriptions: dict[ColumnName, ColumnSimpleMetadata] | None = None,
         compute_metadata: bool = False,
         loading_mode: MetaGenSupportedLoadingMode | None = None,
     ):
@@ -140,7 +142,7 @@ class MetaGen:
 
         if descriptions_path is not None:
             func_map: dict[
-                str, Callable[[Path], dict[str, dict[str, str]]]
+                str, Callable[[Path], dict[ColumnName, ColumnSimpleMetadata]]
             ] = {
                 MetaGenSupportedFileExtension.JSON.value: (
                     cls._load_descriptions_from_json
@@ -178,14 +180,14 @@ class MetaGen:
     @staticmethod
     def _load_descriptions_from_json(
         path: Path,
-    ) -> dict[str, dict[str, str]]:
+    ) -> dict[ColumnName, ColumnSimpleMetadata]:
         return json.loads(path.read_text(), cls=CustomDecoder)["descriptions"]
 
     @staticmethod
     def _load_descriptions_from_csv(
         path: Path,
-    ) -> dict[str, dict[str, str]]:
-        descriptions: dict[str, dict[str, str]] = (
+    ) -> dict[ColumnName, ColumnSimpleMetadata]:
+        descriptions: dict[ColumnName, ColumnSimpleMetadata] = (
             pd.read_csv(path).set_index("column_name").to_dict(orient="index")  # type: ignore[assignment]
         )
         return descriptions
