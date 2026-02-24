@@ -149,13 +149,11 @@ class TestCli:
     @pytest.mark.parametrize(
         ["sql_query"],
         [
-            [
-                """SELECT title, release_year, imdb_score
+            ["""SELECT title, release_year, imdb_score
                 FROM testdata
                 WHERE release_year > 1990
                 ORDER BY imdb_score DESC
-                """
-            ],
+                """],
         ],
     )
     def test_cli_filter_by_sql_query(
